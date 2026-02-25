@@ -1,151 +1,130 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Add Admin-Only Users List Section to Admin Dashboard",
+  "title": "Role-Based Proof File Visibility & Admin Proof Review Panel",
   "requirements": [
     {
-      "id": "REQ-14",
-      "summary": "Add 'Users' menu item to Admin Dashboard sidebar navigation visible only to Admin role",
+      "id": "REQ-25",
+      "summary": "Restrict proof file visibility on Employee Dashboard to only the employee's own tasks and add 'Pending Review' badge",
       "acceptanceCriteria": [
-        "The 'Users' sidebar item appears in the Admin Dashboard navigation when logged in as Admin.",
-        "The 'Users' sidebar item is not rendered at all for Manager or Employee sessions.",
-        "Clicking 'Users' renders the Users List page within the Admin Dashboard without breaking any other dashboard tabs or navigation."
+        "Employee task cards show a preview link or thumbnail for the proof only on tasks where the logged-in user is the assignee and a proof exists.",
+        "No proof file link or data is rendered for tasks assigned to other employees.",
+        "After proof upload, the task card displays a 'Pending Review' badge alongside the existing status badge.",
+        "The ProofUploadButton remains visible only when task status is Yellow or Red (existing behaviour preserved)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/App.tsx",
+          "path": "frontend/src/components/TaskCard.tsx",
           "operation": "modify",
-          "description": "Add a route for /admin/users that renders the UsersListPage component under the protected admin layout, ensuring the route is only accessible when isAdmin is true."
+          "description": "Add conditional rendering for proof file preview (image thumbnail or link) that only displays when the logged-in user's principal matches the task's assignedTo principal and proofFile exists. Integrate the proof preview inline within the card layout. Verify the blob-storage component's usage instructions before implementing the ExternalBlob.getDirectURL() method for rendering the proof."
+        },
+        {
+          "path": "frontend/src/components/StatusBadge.tsx",
+          "operation": "modify",
+          "description": "Add a new 'Pending Review' badge variant that renders a blue badge when approvalStatus is 'pendingReview'. Ensure the badge uses the existing corporate color palette and integrates with the current size prop."
+        },
+        {
+          "path": "frontend/src/pages/EmployeeDashboard.tsx",
+          "operation": "modify",
+          "description": "Pass the current user's principal from useAuth to TaskCard components so they can determine proof visibility. Ensure no proof data from other employees' tasks is rendered or accessible in the DOM."
+        }
+      ]
+    },
+    {
+      "id": "REQ-26",
+      "summary": "Add Admin-only proof metadata fields to All Tasks view in Admin Dashboard",
+      "acceptanceCriteria": [
+        "In the Admin Dashboard All Tasks list, each task card/row with a proof shows a blue 'Proof Uploaded' badge.",
+        "A 'View Proof' button is visible only to Admin; clicking it opens a preview modal or new tab showing the proof image/PDF.",
+        "A 'Download Proof' link is available alongside the View Proof button for Admin only.",
+        "Submission Timestamp is displayed in a readable format (e.g., 'DD MMM YYYY, HH:mm') for Admin.",
+        "Submitted By shows 'Employee Name (email@yesfour.com)' for Admin.",
+        "None of these fields are visible when the authenticated user is a Manager or Employee."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/TaskCard.tsx",
+          "operation": "modify",
+          "description": "Add an isAdminView boolean prop. When true and proofFile exists, render: a blue 'Proof Uploaded' badge, a 'View Proof' button that opens the proof in a modal or new tab using ExternalBlob.getDirectURL(), a 'Download Proof' link using the same URL with download attribute, a formatted Submission Timestamp (using Intl.DateTimeFormat or date-fns), and Submitted By text showing proofSubmittedBy and proofSubmittedByEmail. Ensure all proof-related UI is hidden when isAdminView is false. Verify the blob-storage component's usage instructions before implementing ExternalBlob access."
+        },
+        {
+          "path": "frontend/src/components/GlobalTaskList.tsx",
+          "operation": "modify",
+          "description": "Pass isAdminView={true} prop to TaskCard components when the authenticated user's role is Admin (retrieved via useAuth). Ensure Manager users do not receive this prop or see admin-only proof fields."
+        },
+        {
+          "path": "frontend/src/components/ProofPreviewModal.tsx",
+          "operation": "create",
+          "description": "Create a new modal component that displays a proof file preview. Accept a proofFile ExternalBlob prop. Render an image preview using ExternalBlob.getDirectURL() for image files, or a PDF viewer/icon for PDF files. Include a close button and handle loading states. Use shadcn/ui Dialog component for the modal structure. Verify the blob-storage component's usage instructions before implementing ExternalBlob rendering."
         },
         {
           "path": "frontend/src/pages/AdminDashboard.tsx",
           "operation": "modify",
-          "description": "Add a 'Users' tab to the existing Tabs navigation that is conditionally rendered only when the current user has the Admin role. Wire the tab to navigate to /admin/users when clicked."
+          "description": "Import and pass authentication context to child components. Ensure GlobalTaskList receives the current user's role so it can conditionally render admin-only proof fields."
         }
       ]
     },
     {
-      "id": "REQ-15",
-      "summary": "Create Users List page with paginated table displaying all registered users and their aggregated statistics",
+      "id": "REQ-27",
+      "summary": "Add Admin-only Proof Review Panel with approve/reject actions and status badges to Admin task detail view",
       "acceptanceCriteria": [
-        "The table renders all columns: Serial Number, Full Name, Email, Role, Department, Total Tasks Assigned, Tasks Completed, Performance Points, Account Status.",
-        "Account Status displays as a styled badge showing 'Active' or 'Inactive'.",
-        "The table paginates at 10 rows per page with previous/next controls.",
-        "Serial numbers are sequential across all pages (i.e., page 2 starts at 11).",
-        "Data is fetched from the admin users backend query and renders correctly."
+        "When an Admin expands or views a task that has a proof, a 'Proof Review Section' panel is rendered.",
+        "The panel shows the employee's name, a file preview (image thumbnail or PDF icon), and the formatted upload date/time.",
+        "An 'Approve' button calls the existing approve task mutation and shows a success toast.",
+        "A 'Reject' button opens a modal with a mandatory rejection reason input; submission calls the existing reject task mutation.",
+        "A blue 'Proof Uploaded' badge appears on tasks where approvalStatus is #pendingReview.",
+        "A green 'Approved' badge appears on tasks where approvalStatus is #approved.",
+        "A red 'Rejected' badge appears on tasks where approvalStatus is #rejected.",
+        "The panel and all three badges are invisible to Manager and Employee roles.",
+        "Existing white + green corporate theme is preserved; no new colour tokens are introduced beyond the specified badge colours."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/UsersListPage.tsx",
+          "path": "frontend/src/components/ProofReviewPanel.tsx",
           "operation": "create",
-          "description": "Create the UsersListPage component that fetches all users with statistics using the useGetAllUsersStats hook. Render a paginated table with 10 rows per page showing Serial Number, Full Name, Email, Role, Department, Total Tasks Assigned, Tasks Completed, Performance Points, and Account Status (using a badge component). Include pagination controls that maintain sequential serial numbers across pages."
+          "description": "Create an Admin-only panel component that accepts a TaskResponse prop. Display: employee name (proofSubmittedBy), proof file preview (image thumbnail using ExternalBlob.getDirectURL() or PDF icon), and formatted upload date/time (submissionTimestamp). Include an 'Approve' button that calls the useApproveTask mutation and shows a success toast. Include a 'Reject' button that opens the existing RejectTaskModal component. Wrap the entire panel in a role check: only render when the current user is Admin. Use shadcn/ui Card component for the panel structure. Verify the blob-storage component's usage instructions before implementing ExternalBlob rendering."
         },
         {
-          "path": "frontend/src/components/UserAccountStatusBadge.tsx",
-          "operation": "create",
-          "description": "Create a reusable badge component that displays Account Status as a styled pill showing 'Active' (green accent) or 'Inactive' (grey), consistent with the existing StatusBadge component pattern and Yesfour Infra corporate theme."
+          "path": "frontend/src/components/StatusBadge.tsx",
+          "operation": "modify",
+          "description": "Add three new approval status badge variants: 'Proof Uploaded' (blue, for approvalStatus 'pendingReview'), 'Approved' (green, for approvalStatus 'approved'), and 'Rejected' (red, for approvalStatus 'rejected'). Use the existing corporate color palette for green; add blue and red using Tailwind's default palette. Ensure badges integrate with the existing size prop and design system."
         },
+        {
+          "path": "frontend/src/components/TaskCard.tsx",
+          "operation": "modify",
+          "description": "When isAdminView is true and the task has an approvalStatus, render the appropriate approval status badge (Proof Uploaded/Approved/Rejected) below or alongside the task status badge. Add an expandable/collapsible section or detail slot where the ProofReviewPanel component can be rendered for tasks with proofFile. Ensure the panel is only visible to Admin users."
+        },
+        {
+          "path": "frontend/src/components/GlobalTaskList.tsx",
+          "operation": "modify",
+          "description": "For Admin users, integrate the ProofReviewPanel into the task detail/expanded view for tasks that have a proofFile. Ensure the panel is rendered within or below the TaskCard when the user expands a task or views task details."
+        }
+      ]
+    },
+    {
+      "id": "REQ-28",
+      "summary": "Add role-based proof data fetching logic to React Query hooks and prevent unauthorized proof access",
+      "acceptanceCriteria": [
+        "getProofForTask hook is defined in useQueries.ts and calls the backend proof access query.",
+        "The hook is only called within Admin task views or within the employee's own task card (matching assignedTo).",
+        "If the backend returns an #unauthorized error, the frontend silently suppresses the proof section rather than crashing.",
+        "No proof URL is stored in global query cache in a way that is accessible to Manager or other Employee components."
+      ],
+      "file_operations": [
         {
           "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Add a useGetAllUsersStats hook that calls actor.getAllUsersStats() and returns the list of UserStats objects using React Query with appropriate caching, enabled only when the actor is available and the user is authenticated."
-        }
-      ]
-    },
-    {
-      "id": "REQ-16",
-      "summary": "Add admin action controls to each Users List table row for editing role, toggling account status, and deleting users",
-      "acceptanceCriteria": [
-        "Each table row has Edit Role, Activate/Deactivate, and Delete action controls.",
-        "Edit Role opens a modal or inline dropdown allowing selection of Admin, Manager, or Employee; saving calls the update role mutation and refreshes the table.",
-        "Activate/Deactivate button toggles the user's accountStatus and updates the badge in the table without a full page reload.",
-        "Delete button opens a confirmation dialog; confirming calls the delete mutation and removes the row from the table.",
-        "Cancelling the delete confirmation dialog leaves the user record unchanged."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/EditUserRoleModal.tsx",
-          "operation": "create",
-          "description": "Create a modal dialog component that displays a dropdown for selecting a new role (Admin, Manager, Employee) for a given user. On save, call the useUpdateUserRole mutation hook, show a toast notification on success or failure, and close the modal. Use shadcn Dialog and Select components for consistency."
+          "description": "Add a useGetProofForTask(taskId: bigint, assignedTo: Principal) query hook that conditionally fetches proof data only when the current user is Admin or matches the assignedTo principal. The hook should return the proof-related fields (proofFile, submittedByName, submittedByEmail, submissionTimestamp) from the task. If the backend returns an error or unauthorized response, return null and suppress errors. Use a unique query key that includes the taskId and current user principal to prevent cache leakage across roles."
         },
         {
-          "path": "frontend/src/components/DeleteUserConfirmDialog.tsx",
-          "operation": "create",
-          "description": "Create a confirmation dialog component using shadcn AlertDialog that displays a warning message with the user's name and confirms the permanent deletion. On confirmation, call the useDeleteUser mutation hook, show a toast notification, and close the dialog. On cancel, close without action."
+          "path": "frontend/src/components/TaskCard.tsx",
+          "operation": "modify",
+          "description": "Replace direct proof field access with conditional useGetProofForTask hook calls when rendering proof data. Only invoke the hook when isAdminView is true or the current user matches assignedTo. Handle null/error responses gracefully by hiding the proof section without throwing errors."
         },
         {
-          "path": "frontend/src/pages/UsersListPage.tsx",
+          "path": "frontend/src/components/ProofReviewPanel.tsx",
           "operation": "modify",
-          "description": "Add action buttons to each table row: an Edit Role button that opens the EditUserRoleModal, an Activate/Deactivate toggle button that calls useToggleUserAccountStatus and updates the UI optimistically, and a Delete button that opens the DeleteUserConfirmDialog. Ensure buttons are styled consistently with the Yesfour Infra theme."
-        },
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Add three mutation hooks: useUpdateUserRole (calls actor.updateUserRole), useToggleUserAccountStatus (calls actor.toggleUserAccountStatus), and useDeleteUser (calls actor.deleteUser). Each mutation should invalidate the 'allUsersStats' query on success and handle authorization errors gracefully with user-facing error messages."
-        }
-      ]
-    },
-    {
-      "id": "REQ-17",
-      "summary": "Add search and filter controls above the Users List table for Full Name/Email, Role, and Department",
-      "acceptanceCriteria": [
-        "A search input filters the table to rows where Full Name or Email contains the entered text (case-insensitive).",
-        "The Role dropdown filters the table to only the selected role; 'All' shows every role.",
-        "The Department dropdown filters the table to only users in the selected department; 'All' shows every department.",
-        "Changing any filter resets the current page back to page 1.",
-        "Filters can be combined (e.g., search + role + department applied simultaneously)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/UsersListPage.tsx",
-          "operation": "modify",
-          "description": "Add filter controls above the table: a search Input for Full Name or Email, a Select dropdown for Role (All/Admin/Manager/Employee), and a Select dropdown for Department (All plus the existing department enum values). Implement client-side filtering logic that applies all three filters simultaneously and resets pagination to page 1 when any filter changes. Use shadcn Input and Select components."
-        }
-      ]
-    },
-    {
-      "id": "REQ-18",
-      "summary": "Add summary analytics strip at the top of the Users List page showing Total Users, Total Active Users, Total Managers, and Total Employees",
-      "acceptanceCriteria": [
-        "Four stat cards are displayed above the Users List table.",
-        "Total Users shows the count of all user records.",
-        "Total Active Users shows the count of users with accountStatus = Active.",
-        "Total Managers shows the count of users with role = Manager.",
-        "Total Employees shows the count of users with role = Employee.",
-        "Cards use the existing white + green corporate card style consistent with the rest of the Admin Dashboard."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/UsersSummaryCards.tsx",
-          "operation": "create",
-          "description": "Create a component that accepts an array of UserStats and calculates four counts: Total Users (length), Total Active Users (filter by accountStatus = active), Total Managers (filter by role = manager), Total Employees (filter by role = employee). Render the counts in a 4-card grid using the same card styling pattern as SummaryStatsCards with color-coded icons and the Yesfour Infra corporate theme."
-        },
-        {
-          "path": "frontend/src/pages/UsersListPage.tsx",
-          "operation": "modify",
-          "description": "Render the UsersSummaryCards component at the top of the page, passing the fetched user stats array. Position it above the filter controls and ensure responsive layout on desktop and tablet."
-        }
-      ]
-    },
-    {
-      "id": "REQ-19",
-      "summary": "Ensure the Users List page styling matches the existing Yesfour Infra corporate theme and is fully responsive",
-      "acceptanceCriteria": [
-        "The Users List page visually matches the existing admin dashboard styling (colors, typography, spacing, card borders).",
-        "The table layout is clean and readable on both desktop and tablet widths.",
-        "No chat, messaging, or discussion UI elements are present anywhere on the Users List page.",
-        "Active/Inactive status badges use contrasting colors consistent with the app's existing badge system."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/UsersListPage.tsx",
-          "operation": "modify",
-          "description": "Apply the existing Yesfour Infra corporate theme throughout the page: white backgrounds, green (#2E7D32) primary accent, subtle grey borders, clean sans-serif typography (Inter font), and card-based layouts. Ensure the table uses shadcn Table components with responsive design for desktop and tablet. Verify no chat or messaging UI elements are included."
-        },
-        {
-          "path": "frontend/src/components/UserAccountStatusBadge.tsx",
-          "operation": "modify",
-          "description": "Ensure the Active badge uses a green accent color consistent with the existing badge system, and the Inactive badge uses a contrasting grey color. Follow the same styling pattern as StatusBadge for consistency."
+          "description": "Use the useGetProofForTask hook to fetch proof data for the given task. Handle loading and error states. If proof data is unavailable or unauthorized, render a fallback message or hide the panel entirely."
         }
       ]
     }

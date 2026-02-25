@@ -31,6 +31,7 @@ export default function ProfileSetupPage() {
   const saveProfile = useSaveCallerUserProfile();
 
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [department, setDepartment] = useState('');
   const [role, setRole] = useState<UserRole>(UserRole.employee);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -43,6 +44,11 @@ export default function ProfileSetupPage() {
   const validate = () => {
     const newErrors: Record<string, string> = {};
     if (!name.trim()) newErrors.name = 'Name is required';
+    if (!email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      newErrors.email = 'Please enter a valid email address';
+    }
     if (!department) newErrors.department = 'Department is required';
     if (!role) newErrors.role = 'Role is required';
     setErrors(newErrors);
@@ -56,6 +62,7 @@ export default function ProfileSetupPage() {
     try {
       await saveProfile.mutateAsync({
         name: name.trim(),
+        email: email.trim(),
         department,
         role,
         performancePoints: BigInt(0),
@@ -105,6 +112,19 @@ export default function ProfileSetupPage() {
                   className={errors.name ? 'border-task-red' : ''}
                 />
                 {errors.name && <p className="text-xs text-task-red">{errors.name}</p>}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="email">Login Email ID</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="Enter your login email (e.g. employee@yesfour.com)"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={errors.email ? 'border-task-red' : ''}
+                />
+                {errors.email && <p className="text-xs text-task-red">{errors.email}</p>}
               </div>
 
               <div className="space-y-1.5">

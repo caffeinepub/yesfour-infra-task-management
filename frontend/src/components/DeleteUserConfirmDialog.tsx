@@ -31,7 +31,7 @@ export default function DeleteUserConfirmDialog({
   const handleConfirm = async () => {
     if (!userPrincipal) return;
     try {
-      await deleteUser.mutateAsync(userPrincipal);
+      await deleteUser.mutateAsync(userPrincipal.toString());
       toast.success(`User "${userName}" has been deleted.`);
       onClose();
     } catch (err: unknown) {

@@ -1,42 +1,110 @@
 import Map "mo:core/Map";
+import Nat "mo:core/Nat";
 import Principal "mo:core/Principal";
-import Int "mo:core/Int";
+import Storage "blob-storage/Storage";
 
 module {
-  type OldUserProfile = {
-    name : Text;
-    department : Text;
-    role : { #admin; #manager; #employee };
+  // Old data types from previous version
+  type OldTask = {
+    taskId : Nat;
+    title : Text;
+    department : {
+      #construction;
+      #marketing;
+      #travelDesk;
+      #accounts;
+      #apartments;
+    };
+    assignedTo : Principal;
+    description : Text;
+    deadline : Int;
+    priority : {
+      #high;
+      #medium;
+      #low;
+    };
+    status : {
+      #red;
+      #yellow;
+      #blue;
+      #green;
+    };
+    proofFile : ?Storage.ExternalBlob;
+    approvalStatus : {
+      #pending;
+      #approved;
+      #rejected;
+    };
+    rejectionReason : ?Text;
+    completionTime : ?Int;
     performancePoints : Int;
-  };
-
-  type NewUserProfile = {
-    name : Text;
-    department : Text;
-    role : { #admin; #manager; #employee };
-    performancePoints : Int;
-    accountStatus : { #active; #inactive };
   };
 
   type OldActor = {
-    userProfiles : Map.Map<Principal, OldUserProfile>;
+    lastTaskId : Nat;
+    tasks : Map.Map<Nat, OldTask>;
+  };
+
+  // New extended types
+  type NewTask = {
+    taskId : Nat;
+    title : Text;
+    department : {
+      #construction;
+      #marketing;
+      #travelDesk;
+      #accounts;
+      #apartments;
+    };
+    assignedTo : Principal;
+    description : Text;
+    deadline : Int;
+    priority : {
+      #high;
+      #medium;
+      #low;
+    };
+    status : {
+      #red;
+      #yellow;
+      #blue;
+      #green;
+    };
+    proofFile : ?Storage.ExternalBlob;
+    proofSubmittedBy : ?Text;
+    proofSubmittedByEmail : ?Text;
+    submissionTimestamp : ?Int;
+    approvalStatus : {
+      #pending;
+      #approved;
+      #rejected;
+      #pendingReview;
+    };
+    rejectionReason : ?Text;
+    completionTime : ?Int;
+    performancePoints : Int;
   };
 
   type NewActor = {
-    userProfiles : Map.Map<Principal, NewUserProfile>;
+    lastTaskId : Nat;
+    tasks : Map.Map<Nat, NewTask>;
   };
 
+  // Migration function called by the main actor via with-clause
   public func run(old : OldActor) : NewActor {
-    let newUserProfiles = old.userProfiles.map<Principal, OldUserProfile, NewUserProfile>(
-      func(_principal, oldProfile) {
+    let newTasks = old.tasks.map<Nat, OldTask, NewTask>(
+      func(_id, oldTask) {
         {
-          oldProfile with
-          accountStatus = #active; // Default to active
+          oldTask with
+          proofSubmittedBy = null;
+          proofSubmittedByEmail = null;
+          submissionTimestamp = null;
         };
       }
     );
     {
-      userProfiles = newUserProfiles;
+      old with
+      tasks = newTasks;
     };
   };
 };

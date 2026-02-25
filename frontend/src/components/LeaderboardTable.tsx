@@ -11,7 +11,7 @@ interface LeaderboardEntry {
 }
 
 function LeaderboardRow({ entry }: { entry: LeaderboardEntry }) {
-  const { data: profile } = useGetUserProfile(entry.principal);
+  const { data: profile } = useGetUserProfile(entry.principal.toString());
   const points = Number(entry.points);
 
   const rankDisplay = () => {

@@ -1,16 +1,18 @@
 # Specification
 
 ## Summary
-**Goal:** Add an Admin-only Users List section to the existing Admin Dashboard with full user management capabilities, statistics, and search/filter controls.
+**Goal:** Add role-based proof file visibility controls and an Admin-only Proof Review Panel to the Yesfour Infra Task Management application.
 
 **Planned changes:**
-- Add a backend query (Admin-only) that returns all registered users with aggregated stats: total tasks assigned, tasks completed, and performance points — never exposing password or credential fields
-- Add backend mutations (Admin-only) for updating a user's role, toggling account status (Active/Inactive), and deleting a user record
-- Add a "Users" sidebar menu item in the Admin Dashboard visible only to Admin role; hidden for Manager and Employee roles
-- Create a Users List page with a paginated table (10 per page) showing columns: Serial Number, Full Name, Email, Role, Department, Total Tasks Assigned, Tasks Completed, Performance Points, and Account Status badge
-- Add per-row action controls: Edit Role (modal/dropdown), Activate/Deactivate toggle, and Delete with confirmation dialog
-- Add search input (filter by name or email) and dropdown filters for Role and Department above the table; changing any filter resets to page 1
-- Add a summary strip of four stat cards at the top of the Users List page: Total Users, Total Active Users, Total Managers, Total Employees
-- Style the entire Users List page with the existing white + green (#2E7D32) corporate theme, responsive layout, no chat or messaging elements
+- Update the Motoko backend task data model to store `proofFile` (safe relative URL/key), `submittedByName`, `submittedByEmail`, and `submissionTimestamp` fields on task records.
+- On proof upload, automatically set task status to Blue and `approvalStatus` to `#pendingReview` in the backend.
+- Add a backend query `getProofForTask(taskId)` that enforces role/ownership checks, returning `#unauthorized` for ineligible callers (only Admin or the assigned employee may access proof fields).
+- Ensure all task query responses omit/null proof fields for callers who are not Admin or the task's own assignee.
+- On the Employee Dashboard, show proof file preview/link and a "Pending Review" badge only on the employee's own task cards; hide all proof data for tasks assigned to other employees.
+- On the Admin Dashboard All Tasks view, add per-task: a blue "Proof Uploaded" badge, a "View Proof" button (opens image/PDF preview modal or new tab), a "Download Proof" link, a formatted Submission Timestamp, and a "Submitted By" field (name + email) — all hidden from Manager and Employee roles.
+- Add an Admin-only Proof Review Panel in the Admin task expanded/detail view showing: employee name, file preview (thumbnail or PDF icon), upload date/time, an Approve button, and a Reject button that opens a modal requiring a rejection reason before submission.
+- Add three approval status badges visible only to Admin: blue "Proof Uploaded" (`#pendingReview`), green "Approved" (`#approved`), red "Rejected" (`#rejected`).
+- Add a `getProofForTask` React Query hook in `useQueries.ts` that is only invoked from Admin task views or the employee's own task card; silently suppress the proof section if the backend returns `#unauthorized`.
+- Ensure no proof URLs are stored in the global query cache in a way accessible to Manager or other Employee components.
 
-**User-visible outcome:** Admins can navigate to a "Users" section in the Admin Dashboard to view, search, filter, and manage all registered users — editing roles, toggling account status, and deleting users — while Managers and Employees see no trace of this section.
+**User-visible outcome:** Admins can view, preview, download, approve, and reject uploaded proof files from a dedicated Proof Review Panel in the task detail view, with clear status badges. Employees see only their own proof and a "Pending Review" badge after uploading. Managers and other employees see no proof-related data at any point.

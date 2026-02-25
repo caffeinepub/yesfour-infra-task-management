@@ -2,9 +2,34 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-add-a-users-menu-item-to-the-admin-dashboard-sidebar-navigation-that-is-visible-only-when-the-authenticated-user-has-the-admin-role-the-item-must-be-completely-hidden-for-manager-and-employee-roles-clicking-it-navigates-to-the-users-list-page-within-the-admin-dashboard",
-      "featureTitle": "Add a 'Users' menu item to the Admin Dashboard sidebar navigation that is visible only when the authenticated user has the Admin role. The item must be completely hidden for Manager and Employee roles. Clicking it navigates to the Users List page within the Admin Dashboard.",
+      "featureId": "feature-on-the-employee-dashboard-employeedashboard-tsx-proofuploadbutton-tsx-ensure-that-1-each-employee-can-only-see-their-own-uploaded-proof-file-rendered-inline-or-as-a-link-within-their-own-task-card-2-proof-files-belonging-to-other-employees-are-never-fetched-or-displayed-3-after-upload-a-pending-review-label-or-badge-appears-on-the-task-card-to-communicate-status-to-the-employee",
+      "featureTitle": "On the Employee Dashboard (EmployeeDashboard.tsx / ProofUploadButton.tsx), ensure that: (1) each employee can only see their own uploaded proof file (rendered inline or as a link) within their own task card; (2) proof files belonging to other employees are never fetched or displayed; (3) after upload, a 'Pending Review' label or badge appears on the task card to communicate status to the employee.",
       "files": [
+        "frontend/src/components/StatusBadge.tsx",
+        "frontend/src/components/TaskCard.tsx",
+        "frontend/src/pages/EmployeeDashboard.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-25"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-in-the-admin-dashboard-all-tasks-view-admindashboard-tsx-globaltasklist-tsx-taskcard-tsx-add-admin-only-visible-fields-to-each-task-entry-a-blue-proof-uploaded-badge-shown-when-prooffile-exists-a-view-proof-button-that-fetches-and-opens-the-proof-image-preview-or-pdf-in-a-modal-or-new-tab-a-download-proof-option-the-submission-timestamp-formatted-as-a-human-readable-date-time-string-and-the-submitted-by-field-showing-employee-name-and-email-these-fields-must-be-completely-hidden-for-manager-and-employee-roles",
+      "featureTitle": "In the Admin Dashboard → All Tasks view (AdminDashboard.tsx / GlobalTaskList.tsx / TaskCard.tsx), add Admin-only visible fields to each task entry: a blue 'Proof Uploaded' badge (shown when proofFile exists), a 'View Proof' button that fetches and opens the proof (image preview or PDF) in a modal or new tab, a 'Download Proof' option, the Submission Timestamp formatted as a human-readable date/time string, and the Submitted By field showing Employee Name and Email. These fields must be completely hidden for Manager and Employee roles.",
+      "files": [
+        "frontend/src/components/GlobalTaskList.tsx",
+        "frontend/src/components/ProofPreviewModal.tsx",
+        "frontend/src/components/TaskCard.tsx",
         "frontend/src/pages/AdminDashboard.tsx"
       ],
       "components": [
@@ -17,17 +42,18 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-14"
+        "REQ-26"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-create-a-users-list-page-inside-the-admin-dashboard-that-displays-all-registered-users-in-a-paginated-table-the-table-must-include-the-following-columns-serial-number-full-name-email-role-department-total-tasks-assigned-tasks-completed-performance-points-and-account-status-active-inactive-pagination-shows-10-users-per-page",
-      "featureTitle": "Create a Users List page inside the Admin Dashboard that displays all registered users in a paginated table. The table must include the following columns: Serial Number, Full Name, Email, Role, Department, Total Tasks Assigned, Tasks Completed, Performance Points, and Account Status (Active / Inactive). Pagination shows 10 users per page.",
+      "featureId": "feature-add-an-admin-only-proof-review-panel-section-inside-the-admin-task-detail-expanded-view-in-the-admin-dashboard-the-panel-must-display-employee-name-an-uploaded-file-preview-image-thumbnail-or-pdf-icon-with-filename-uploaded-date-time-an-approve-button-calls-the-existing-approve-mutation-and-a-reject-button-that-opens-a-modal-requiring-a-rejection-reason-text-input-before-submission-add-three-status-indicator-badges-used-throughout-the-admin-view-a-blue-badge-labelled-proof-uploaded-a-green-badge-labelled-approved-and-a-red-badge-labelled-rejected-reflecting-the-current-approvalstatus-of-the-task",
+      "featureTitle": "Add an Admin-only Proof Review Panel section inside the Admin Task detail/expanded view in the Admin Dashboard. The panel must display: Employee Name, an uploaded file preview (image thumbnail or PDF icon with filename), Uploaded Date & Time, an Approve button (calls the existing approve mutation), and a Reject button that opens a modal requiring a rejection reason text input before submission. Add three status indicator badges used throughout the Admin view: a blue badge labelled 'Proof Uploaded', a green badge labelled 'Approved', and a red badge labelled 'Rejected', reflecting the current approvalStatus of the task.",
       "files": [
-        "frontend/src/components/UserAccountStatusBadge.tsx",
-        "frontend/src/hooks/useQueries.ts",
-        "frontend/src/pages/UsersListPage.tsx"
+        "frontend/src/components/GlobalTaskList.tsx",
+        "frontend/src/components/ProofReviewPanel.tsx",
+        "frontend/src/components/StatusBadge.tsx",
+        "frontend/src/components/TaskCard.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -39,18 +65,17 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-15"
+        "REQ-27"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-add-admin-action-controls-to-each-row-in-the-users-list-table-an-edit-role-button-that-opens-an-inline-selector-or-modal-to-change-the-user-s-role-an-activate-deactivate-toggle-button-that-switches-the-user-s-account-status-and-a-delete-button-that-shows-a-confirmation-popup-before-permanently-removing-the-user",
-      "featureTitle": "Add admin action controls to each row in the Users List table: an Edit Role button that opens an inline selector or modal to change the user's role; an Activate/Deactivate toggle button that switches the user's account status; and a Delete button that shows a confirmation popup before permanently removing the user.",
+      "featureId": "feature-update-the-usequeries-ts-hooks-and-any-relevant-react-query-fetch-logic-to-ensure-1-proof-related-fields-prooffile-url-submittedbyname-submittedbyemail-submissiontimestamp-are-only-requested-and-stored-client-side-when-the-authenticated-user-is-admin-or-the-task-s-own-assignee-2-a-getprooffortask-taskid-query-hook-is-added-that-calls-the-protected-backend-query-and-is-only-invoked-from-admin-role-views-or-the-employee-s-own-task-view",
+      "featureTitle": "Update the useQueries.ts hooks and any relevant React Query fetch logic to ensure: (1) proof-related fields (proofFile URL, submittedByName, submittedByEmail, submissionTimestamp) are only requested and stored client-side when the authenticated user is Admin or the task's own assignee; (2) a getProofForTask(taskId) query hook is added that calls the protected backend query and is only invoked from Admin-role views or the employee's own task view.",
       "files": [
-        "frontend/src/components/DeleteUserConfirmDialog.tsx",
-        "frontend/src/components/EditUserRoleModal.tsx",
-        "frontend/src/hooks/useQueries.ts",
-        "frontend/src/pages/UsersListPage.tsx"
+        "frontend/src/components/ProofReviewPanel.tsx",
+        "frontend/src/components/TaskCard.tsx",
+        "frontend/src/hooks/useQueries.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -62,69 +87,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-16"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-add-search-and-filter-controls-above-the-users-list-table-a-text-search-input-that-filters-users-by-full-name-or-email-a-role-filter-dropdown-all-admin-manager-employee-and-a-department-filter-dropdown-populated-with-the-existing-department-values-used-in-the-app-all-filters-apply-client-side-or-trigger-a-re-fetch-and-reset-pagination-to-page-1-when-changed",
-      "featureTitle": "Add search and filter controls above the Users List table: a text search input that filters users by Full Name or Email; a Role filter dropdown (All / Admin / Manager / Employee); and a Department filter dropdown populated with the existing department values used in the app. All filters apply client-side or trigger a re-fetch and reset pagination to page 1 when changed.",
-      "files": [
-        "frontend/src/pages/UsersListPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-17"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-add-a-summary-analytics-strip-at-the-top-of-the-users-list-page-showing-four-stat-cards-total-users-total-active-users-total-managers-and-total-employees-these-values-are-derived-from-the-same-user-list-data-already-fetched-for-the-table",
-      "featureTitle": "Add a summary analytics strip at the top of the Users List page showing four stat cards: Total Users, Total Active Users, Total Managers, and Total Employees. These values are derived from the same user list data already fetched for the table.",
-      "files": [
-        "frontend/src/components/UsersSummaryCards.tsx",
-        "frontend/src/pages/UsersListPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-18"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-ensure-the-users-list-page-and-all-its-controls-are-styled-with-the-existing-yesfour-infra-corporate-theme-white-backgrounds-green-2e7d32-primary-accent-subtle-grey-borders-clean-sans-serif-typography-and-card-based-layouts-the-page-must-be-responsive-and-must-not-introduce-any-chat-or-messaging-ui-elements",
-      "featureTitle": "Ensure the Users List page and all its controls are styled with the existing Yesfour Infra corporate theme: white backgrounds, green (#2E7D32) primary accent, subtle grey borders, clean sans-serif typography, and card-based layouts. The page must be responsive and must not introduce any chat or messaging UI elements.",
-      "files": [
-        "frontend/src/components/UserAccountStatusBadge.tsx",
-        "frontend/src/pages/UsersListPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-19"
+        "REQ-28"
       ],
       "confidence": "high"
     }

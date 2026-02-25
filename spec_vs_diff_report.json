@@ -1,66 +1,87 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-25T10:41:07.352Z",
-  "summary": "The diff implements most of the requested requirements (REQ-12 through REQ-19) for an admin-only Users List section. Backend mutations and queries are present in main.mo, frontend components and pages are added, and the Admin Dashboard is updated with a Users tab. However, there are notable gaps: the backend getAllUsersStats query does not include a Principal or email field in UserStats, breaking per-user mutations on the frontend. The search filter incorrectly checks department instead of email. The Users tab is unconditionally rendered in AdminDashboard without explicit role-based hiding.",
+  "generatedAt": "2026-02-25T11:37:14.751Z",
+  "summary": "The diff implements most of the required features across REQ-23 through REQ-28. Backend changes extend the task data model with proof metadata fields, add role-based visibility, and include a migration module. Frontend changes add ProofPreviewModal, ProofReviewPanel, RejectTaskModal, StatusBadge enhancements, TaskCard updates, ProofUploadButton updates, and query hooks. However, several specific acceptance criteria have gaps: the backend getProofForTask query with #unauthorized error variant is not clearly evidenced, the explicit role-check filtering in backend query responses is partially visible but truncated, and the useQueries.ts getProofForTask hook is not clearly shown in the diff.",
   "missing_requirements": [
     {
-      "id": "REQ-12",
-      "requirement": "The admin users query response must include an email field for each user profile.",
-      "reason": "The UserProfile type in backend/main.mo and the UserStats struct do not include an email field. The frontend UsersListPage has an Email column but the backend never returns email data.",
+      "id": "REQ-23",
+      "requirement": "A backend query getProofForTask(taskId) enforces role/ownership check and returns an error variant (#unauthorized) when called by an ineligible principal.",
+      "reason": "The backend/main.mo diff is truncated and does not show a getProofForTask function with an #unauthorized error variant. The diff shows task model extensions but not this specific guarded query endpoint.",
       "evidence": [
-        "backend/main.mo",
-        "frontend/src/pages/UsersListPage.tsx"
+        "backend/main.mo"
       ]
     },
     {
-      "id": "REQ-12",
-      "requirement": "getAllUsersStats must return each user's Principal so the frontend can call role/status/delete mutations per user.",
-      "reason": "The backend returns UserStats[] without the user's Principal. The frontend falls back to synthetic 'user-{idx}' string keys, making it impossible to pass a real Principal to deleteUser, updateUserRole, or toggleUserAccountStatus.",
+      "id": "REQ-23",
+      "requirement": "When a Manager or a different Employee (not the assignee) fetches task data, proofFile URL, submittedBy, and submissionTimestamp fields are absent or null in the response.",
+      "reason": "The backend/main.mo diff is truncated and does not clearly show the role-filtering logic in getAllTasks or getTasksForCaller that nulls out proof fields for non-admin, non-assignee callers.",
       "evidence": [
-        "backend/main.mo",
-        "frontend/src/pages/UsersListPage.tsx"
+        "backend/main.mo"
       ]
     },
     {
-      "id": "REQ-14",
-      "requirement": "The 'Users' sidebar menu item must be completely hidden (not rendered at all) for Manager and Employee roles.",
-      "reason": "The Users tab is unconditionally rendered inside AdminDashboard's TabsList without any role-based conditional guard. Non-admins are redirected away by routing logic but the tab itself is not conditionally hidden.",
+      "id": "REQ-28",
+      "requirement": "getProofForTask hook is defined in useQueries.ts and calls the backend proof access query; the hook is only called within Admin task views or within the employee's own task card (matching assignedTo).",
+      "reason": "The useQueries.ts diff is truncated. There is no visible evidence of a getProofForTask hook defined in the file. The existing hooks shown do not include this specific hook.",
       "evidence": [
-        "frontend/src/pages/AdminDashboard.tsx"
+        "frontend/src/hooks/useQueries.ts"
       ]
     },
     {
-      "id": "REQ-17",
-      "requirement": "The text search input must filter by Full Name OR Email (case-insensitive).",
-      "reason": "In UsersListPage.tsx, the search filter checks profile.name and profile.department instead of profile.name and profile.email, and email does not exist in the profile type.",
+      "id": "REQ-28",
+      "requirement": "No proof URL is stored in global query cache in a way that is accessible to Manager or other Employee components.",
+      "reason": "The query cache strategy for isolating proof data is not evidenced in the truncated useQueries.ts. The existing allTasks and tasksForCaller cache keys are shared without role-scoped cache isolation shown.",
       "evidence": [
-        "frontend/src/pages/UsersListPage.tsx"
+        "frontend/src/hooks/useQueries.ts"
+      ]
+    },
+    {
+      "id": "REQ-25",
+      "requirement": "Employee task cards show a preview link or thumbnail for the proof only on tasks where the logged-in user is the assignee and a proof exists; no proof file link or data is rendered for tasks assigned to other employees.",
+      "reason": "The TaskCard.tsx is truncated and it cannot be fully confirmed that a proof link or thumbnail is only rendered when isAssignee is true in the employee view context.",
+      "evidence": [
+        "frontend/src/components/TaskCard.tsx",
+        "frontend/src/pages/EmployeeDashboard.tsx"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "A migration module (migration.mo) was added to handle schema migration for the accountStatus field.",
-      "reason": "The build request did not request any migration utility or schema migration module. It only requested new backend queries and mutations.",
+      "description": "ProofFileThumbnail sub-component referenced inside ProofReviewPanel.tsx but not defined anywhere in the diff",
+      "reason": "The diff references a ProofFileThumbnail component inside ProofReviewPanel.tsx but no such component file is added or defined, and it was not requested in any requirement.",
+      "evidence": [
+        "frontend/src/components/ProofReviewPanel.tsx"
+      ]
+    },
+    {
+      "description": "Formal migration module (backend/migration.mo) with typed OldActor/NewActor structs and a run() migration function",
+      "reason": "While data model extension was required (REQ-24), a formal migration module with typed OldActor/NewActor structs and a run() function was not explicitly requested in any requirement. The requirements only asked to extend the task data model.",
       "evidence": [
         "backend/migration.mo"
       ]
     }
   ],
-  "confidence": 0.72,
+  "confidence": 0.62,
   "changed_files": [
     "backend/main.mo",
     "backend/migration.mo",
     "frontend-file-summaries.txt",
     "frontend/src/components/DeleteUserConfirmDialog.tsx",
+    "frontend/src/components/DepartmentProductivityPanel.tsx",
     "frontend/src/components/EditUserRoleModal.tsx",
-    "frontend/src/components/UserAccountStatusBadge.tsx",
-    "frontend/src/components/UsersSummaryCards.tsx",
+    "frontend/src/components/GlobalTaskList.tsx",
+    "frontend/src/components/LeaderboardTable.tsx",
+    "frontend/src/components/ProofPreviewModal.tsx",
+    "frontend/src/components/ProofReviewPanel.tsx",
+    "frontend/src/components/ProofUploadButton.tsx",
+    "frontend/src/components/RejectTaskModal.tsx",
+    "frontend/src/components/StatusBadge.tsx",
+    "frontend/src/components/TaskApprovalActions.tsx",
+    "frontend/src/components/TaskCard.tsx",
     "frontend/src/hooks/useQueries.ts",
     "frontend/src/pages/AdminDashboard.tsx",
-    "frontend/src/pages/ProfileSetupPage.tsx",
-    "frontend/src/pages/UsersListPage.tsx",
+    "frontend/src/pages/EmployeeDashboard.tsx",
     "project_state.json"
   ]
 }

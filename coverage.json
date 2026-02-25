@@ -1,108 +1,91 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-25T10:41:07.356Z",
+  "generatedAt": "2026-02-25T11:37:14.755Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 8,
-    "implemented": 6,
+    "total": 6,
+    "implemented": 4,
     "items": [
       {
-        "id": "REQ-12",
-        "summary": "Add a backend query in the Motoko actor that returns a list of all registered users with aggregated statistics: total tasks assigned, total tasks completed (Green status), and sum of performance points. This endpoint must be accessible only by principals with the Admin role; any other caller must receive an authorization error. The response must never include password or credential data.",
+        "id": "REQ-23",
+        "summary": "Update the backend Motoko actor so that proof file data (proofFile blob/path, submittedBy, submissionTimestamp) stored on a task record is only returned in query responses to the Admin role or the employee who is the assignedTo principal of that specific task. For all other callers, these fields must be omitted or nulled out in the returned task record.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-13",
-        "summary": "Add backend mutations in the Motoko actor for admin user management: (1) update a user's role (Admin / Manager / Employee), (2) toggle a user's account status (Active / Inactive), and (3) delete a user record. All three mutations must be restricted to Admin principals only.",
+        "id": "REQ-24",
+        "summary": "Extend the task data model in the Motoko backend to ensure that when an employee uploads proof, the task stores: proofFile (safe relative URL or blob key — never a full server path), submittedByName (employee full name), submittedByEmail (employee email), and submissionTimestamp (nanosecond timestamp). The task's approvalStatus must be set to #pendingReview upon proof upload, and status must transition to Blue (#blue) at that point.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-14",
-        "summary": "Add a 'Users' menu item to the Admin Dashboard sidebar navigation that is visible only when the authenticated user has the Admin role. The item must be completely hidden for Manager and Employee roles. Clicking it navigates to the Users List page within the Admin Dashboard.",
+        "id": "REQ-25",
+        "summary": "On the Employee Dashboard (EmployeeDashboard.tsx / ProofUploadButton.tsx), ensure that: (1) each employee can only see their own uploaded proof file (rendered inline or as a link) within their own task card; (2) proof files belonging to other employees are never fetched or displayed; (3) after upload, a 'Pending Review' label or badge appears on the task card to communicate status to the employee.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/App.tsx",
+          "frontend/src/components/TaskCard.tsx",
+          "frontend/src/components/StatusBadge.tsx",
+          "frontend/src/pages/EmployeeDashboard.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/TaskCard.tsx",
+          "frontend/src/components/StatusBadge.tsx",
+          "frontend/src/pages/EmployeeDashboard.tsx"
+        ]
+      },
+      {
+        "id": "REQ-26",
+        "summary": "In the Admin Dashboard → All Tasks view (AdminDashboard.tsx / GlobalTaskList.tsx / TaskCard.tsx), add Admin-only visible fields to each task entry: a blue 'Proof Uploaded' badge (shown when proofFile exists), a 'View Proof' button that fetches and opens the proof (image preview or PDF) in a modal or new tab, a 'Download Proof' option, the Submission Timestamp formatted as a human-readable date/time string, and the Submitted By field showing Employee Name and Email. These fields must be completely hidden for Manager and Employee roles.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/TaskCard.tsx",
+          "frontend/src/components/GlobalTaskList.tsx",
+          "frontend/src/components/ProofPreviewModal.tsx",
           "frontend/src/pages/AdminDashboard.tsx"
         ],
         "matchedFiles": [
+          "frontend/src/components/TaskCard.tsx",
+          "frontend/src/components/GlobalTaskList.tsx",
+          "frontend/src/components/ProofPreviewModal.tsx",
           "frontend/src/pages/AdminDashboard.tsx"
         ]
       },
       {
-        "id": "REQ-15",
-        "summary": "Create a Users List page inside the Admin Dashboard that displays all registered users in a paginated table. The table must include the following columns: Serial Number, Full Name, Email, Role, Department, Total Tasks Assigned, Tasks Completed, Performance Points, and Account Status (Active / Inactive). Pagination shows 10 users per page.",
+        "id": "REQ-27",
+        "summary": "Add an Admin-only Proof Review Panel section inside the Admin Task detail/expanded view in the Admin Dashboard. The panel must display: Employee Name, an uploaded file preview (image thumbnail or PDF icon with filename), Uploaded Date & Time, an Approve button (calls the existing approve mutation), and a Reject button that opens a modal requiring a rejection reason text input before submission. Add three status indicator badges used throughout the Admin view: a blue badge labelled 'Proof Uploaded', a green badge labelled 'Approved', and a red badge labelled 'Rejected', reflecting the current approvalStatus of the task.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/UsersListPage.tsx",
-          "frontend/src/components/UserAccountStatusBadge.tsx",
-          "frontend/src/hooks/useQueries.ts"
+          "frontend/src/components/ProofReviewPanel.tsx",
+          "frontend/src/components/StatusBadge.tsx",
+          "frontend/src/components/TaskCard.tsx",
+          "frontend/src/components/GlobalTaskList.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/UsersListPage.tsx",
-          "frontend/src/components/UserAccountStatusBadge.tsx",
-          "frontend/src/hooks/useQueries.ts"
+          "frontend/src/components/ProofReviewPanel.tsx",
+          "frontend/src/components/StatusBadge.tsx",
+          "frontend/src/components/TaskCard.tsx",
+          "frontend/src/components/GlobalTaskList.tsx"
         ]
       },
       {
-        "id": "REQ-16",
-        "summary": "Add admin action controls to each row in the Users List table: an Edit Role button that opens an inline selector or modal to change the user's role; an Activate/Deactivate toggle button that switches the user's account status; and a Delete button that shows a confirmation popup before permanently removing the user.",
+        "id": "REQ-28",
+        "summary": "Update the useQueries.ts hooks and any relevant React Query fetch logic to ensure: (1) proof-related fields (proofFile URL, submittedByName, submittedByEmail, submissionTimestamp) are only requested and stored client-side when the authenticated user is Admin or the task's own assignee; (2) a getProofForTask(taskId) query hook is added that calls the protected backend query and is only invoked from Admin-role views or the employee's own task view.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/EditUserRoleModal.tsx",
-          "frontend/src/components/DeleteUserConfirmDialog.tsx",
-          "frontend/src/pages/UsersListPage.tsx",
-          "frontend/src/hooks/useQueries.ts"
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/TaskCard.tsx",
+          "frontend/src/components/ProofReviewPanel.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/EditUserRoleModal.tsx",
-          "frontend/src/components/DeleteUserConfirmDialog.tsx",
-          "frontend/src/pages/UsersListPage.tsx",
-          "frontend/src/hooks/useQueries.ts"
-        ]
-      },
-      {
-        "id": "REQ-17",
-        "summary": "Add search and filter controls above the Users List table: a text search input that filters users by Full Name or Email; a Role filter dropdown (All / Admin / Manager / Employee); and a Department filter dropdown populated with the existing department values used in the app. All filters apply client-side or trigger a re-fetch and reset pagination to page 1 when changed.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/UsersListPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/UsersListPage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-18",
-        "summary": "Add a summary analytics strip at the top of the Users List page showing four stat cards: Total Users, Total Active Users, Total Managers, and Total Employees. These values are derived from the same user list data already fetched for the table.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/UsersSummaryCards.tsx",
-          "frontend/src/pages/UsersListPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/UsersSummaryCards.tsx",
-          "frontend/src/pages/UsersListPage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-19",
-        "summary": "Ensure the Users List page and all its controls are styled with the existing Yesfour Infra corporate theme: white backgrounds, green (#2E7D32) primary accent, subtle grey borders, clean sans-serif typography, and card-based layouts. The page must be responsive and must not introduce any chat or messaging UI elements.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/UsersListPage.tsx",
-          "frontend/src/components/UserAccountStatusBadge.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/UsersListPage.tsx",
-          "frontend/src/components/UserAccountStatusBadge.tsx"
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/TaskCard.tsx",
+          "frontend/src/components/ProofReviewPanel.tsx"
         ]
       }
     ]
@@ -111,22 +94,28 @@
     "backend/main.mo",
     "backend/migration.mo",
     "build-request.json",
-    "build-template/README.md",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
     "frontend/src/backend.d.ts",
     "frontend/src/backend.ts",
     "frontend/src/components/DeleteUserConfirmDialog.tsx",
+    "frontend/src/components/DepartmentProductivityPanel.tsx",
     "frontend/src/components/EditUserRoleModal.tsx",
-    "frontend/src/components/UserAccountStatusBadge.tsx",
-    "frontend/src/components/UsersSummaryCards.tsx",
+    "frontend/src/components/GlobalTaskList.tsx",
+    "frontend/src/components/LeaderboardTable.tsx",
+    "frontend/src/components/ProofPreviewModal.tsx",
+    "frontend/src/components/ProofReviewPanel.tsx",
+    "frontend/src/components/ProofUploadButton.tsx",
+    "frontend/src/components/RejectTaskModal.tsx",
+    "frontend/src/components/StatusBadge.tsx",
+    "frontend/src/components/TaskApprovalActions.tsx",
+    "frontend/src/components/TaskCard.tsx",
     "frontend/src/declarations/backend.did.d.ts",
     "frontend/src/declarations/backend.did.js",
     "frontend/src/hooks/useQueries.ts",
     "frontend/src/pages/AdminDashboard.tsx",
-    "frontend/src/pages/ProfileSetupPage.tsx",
-    "frontend/src/pages/UsersListPage.tsx",
+    "frontend/src/pages/EmployeeDashboard.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

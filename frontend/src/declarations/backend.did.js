@@ -37,6 +37,43 @@ export const TaskPriority = IDL.Variant({
   'high' : IDL.Null,
   'medium' : IDL.Null,
 });
+export const UserSummary = IDL.Record({
+  'principal' : IDL.Principal,
+  'name' : IDL.Text,
+  'email' : IDL.Text,
+  'department' : IDL.Text,
+});
+export const TaskStatus = IDL.Variant({
+  'red' : IDL.Null,
+  'blue' : IDL.Null,
+  'green' : IDL.Null,
+  'yellow' : IDL.Null,
+});
+export const ExternalBlob = IDL.Vec(IDL.Nat8);
+export const ApprovalStatus = IDL.Variant({
+  'pendingReview' : IDL.Null,
+  'pending' : IDL.Null,
+  'approved' : IDL.Null,
+  'rejected' : IDL.Null,
+});
+export const TaskResponse = IDL.Record({
+  'status' : TaskStatus,
+  'title' : IDL.Text,
+  'proofFile' : IDL.Opt(ExternalBlob),
+  'assignedTo' : IDL.Principal,
+  'completionTime' : IDL.Opt(Time),
+  'submissionTimestamp' : IDL.Opt(Time),
+  'rejectionReason' : IDL.Opt(IDL.Text),
+  'description' : IDL.Text,
+  'performancePoints' : IDL.Int,
+  'deadline' : Time,
+  'approvalStatus' : ApprovalStatus,
+  'taskId' : IDL.Nat,
+  'proofSubmittedBy' : IDL.Opt(IDL.Text),
+  'priority' : TaskPriority,
+  'proofSubmittedByEmail' : IDL.Opt(IDL.Text),
+  'department' : Department,
+});
 export const AccountStatus = IDL.Variant({
   'active' : IDL.Null,
   'inactive' : IDL.Null,
@@ -51,6 +88,7 @@ export const UserProfile = IDL.Record({
   'name' : IDL.Text,
   'role' : UserRole,
   'performancePoints' : IDL.Int,
+  'email' : IDL.Text,
   'department' : IDL.Text,
 });
 export const UserStats = IDL.Record({
@@ -58,33 +96,6 @@ export const UserStats = IDL.Record({
   'tasksCompleted' : IDL.Nat,
   'performancePoints' : IDL.Int,
   'profile' : UserProfile,
-});
-export const TaskStatus = IDL.Variant({
-  'red' : IDL.Null,
-  'blue' : IDL.Null,
-  'green' : IDL.Null,
-  'yellow' : IDL.Null,
-});
-export const ExternalBlob = IDL.Vec(IDL.Nat8);
-export const ApprovalStatus = IDL.Variant({
-  'pending' : IDL.Null,
-  'approved' : IDL.Null,
-  'rejected' : IDL.Null,
-});
-export const Task = IDL.Record({
-  'status' : TaskStatus,
-  'title' : IDL.Text,
-  'proofFile' : IDL.Opt(ExternalBlob),
-  'assignedTo' : IDL.Principal,
-  'completionTime' : IDL.Opt(Time),
-  'rejectionReason' : IDL.Opt(IDL.Text),
-  'description' : IDL.Text,
-  'performancePoints' : IDL.Int,
-  'deadline' : Time,
-  'approvalStatus' : ApprovalStatus,
-  'taskId' : IDL.Nat,
-  'priority' : TaskPriority,
-  'department' : Department,
 });
 
 export const idlService = IDL.Service({
@@ -118,11 +129,12 @@ export const idlService = IDL.Service({
   'approveTask' : IDL.Func([IDL.Nat], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole__1], [], []),
   'createTask' : IDL.Func(
-      [IDL.Text, Department, IDL.Principal, IDL.Text, Time, TaskPriority],
+      [IDL.Text, Department, IDL.Text, IDL.Text, Time, TaskPriority],
       [IDL.Nat],
       [],
     ),
   'deleteUser' : IDL.Func([IDL.Principal], [], []),
+  'getActiveUsers' : IDL.Func([], [IDL.Vec(UserSummary)], ['query']),
   'getAdminDashboard' : IDL.Func(
       [],
       [
@@ -135,11 +147,16 @@ export const idlService = IDL.Service({
       ],
       ['query'],
     ),
+  'getAllTasks' : IDL.Func([], [IDL.Vec(TaskResponse)], ['query']),
   'getAllUsersStats' : IDL.Func([], [IDL.Vec(UserStats)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole__1], ['query']),
-  'getTasksForCaller' : IDL.Func([], [IDL.Vec(Task)], ['query']),
-  'getTasksForUser' : IDL.Func([IDL.Principal], [IDL.Vec(Task)], ['query']),
+  'getTasksForCaller' : IDL.Func([], [IDL.Vec(TaskResponse)], ['query']),
+  'getTasksForUser' : IDL.Func(
+      [IDL.Principal],
+      [IDL.Vec(TaskResponse)],
+      ['query'],
+    ),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
       [IDL.Opt(UserProfile)],
@@ -150,7 +167,11 @@ export const idlService = IDL.Service({
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'toggleUserAccountStatus' : IDL.Func([IDL.Principal, AccountStatus], [], []),
   'updateUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-  'uploadProofFile' : IDL.Func([IDL.Nat, ExternalBlob], [], []),
+  'uploadProofFile' : IDL.Func(
+      [IDL.Nat, ExternalBlob, IDL.Text, IDL.Text],
+      [],
+      [],
+    ),
 });
 
 export const idlInitArgs = [];
@@ -185,6 +206,43 @@ export const idlFactory = ({ IDL }) => {
     'high' : IDL.Null,
     'medium' : IDL.Null,
   });
+  const UserSummary = IDL.Record({
+    'principal' : IDL.Principal,
+    'name' : IDL.Text,
+    'email' : IDL.Text,
+    'department' : IDL.Text,
+  });
+  const TaskStatus = IDL.Variant({
+    'red' : IDL.Null,
+    'blue' : IDL.Null,
+    'green' : IDL.Null,
+    'yellow' : IDL.Null,
+  });
+  const ExternalBlob = IDL.Vec(IDL.Nat8);
+  const ApprovalStatus = IDL.Variant({
+    'pendingReview' : IDL.Null,
+    'pending' : IDL.Null,
+    'approved' : IDL.Null,
+    'rejected' : IDL.Null,
+  });
+  const TaskResponse = IDL.Record({
+    'status' : TaskStatus,
+    'title' : IDL.Text,
+    'proofFile' : IDL.Opt(ExternalBlob),
+    'assignedTo' : IDL.Principal,
+    'completionTime' : IDL.Opt(Time),
+    'submissionTimestamp' : IDL.Opt(Time),
+    'rejectionReason' : IDL.Opt(IDL.Text),
+    'description' : IDL.Text,
+    'performancePoints' : IDL.Int,
+    'deadline' : Time,
+    'approvalStatus' : ApprovalStatus,
+    'taskId' : IDL.Nat,
+    'proofSubmittedBy' : IDL.Opt(IDL.Text),
+    'priority' : TaskPriority,
+    'proofSubmittedByEmail' : IDL.Opt(IDL.Text),
+    'department' : Department,
+  });
   const AccountStatus = IDL.Variant({
     'active' : IDL.Null,
     'inactive' : IDL.Null,
@@ -199,6 +257,7 @@ export const idlFactory = ({ IDL }) => {
     'name' : IDL.Text,
     'role' : UserRole,
     'performancePoints' : IDL.Int,
+    'email' : IDL.Text,
     'department' : IDL.Text,
   });
   const UserStats = IDL.Record({
@@ -206,33 +265,6 @@ export const idlFactory = ({ IDL }) => {
     'tasksCompleted' : IDL.Nat,
     'performancePoints' : IDL.Int,
     'profile' : UserProfile,
-  });
-  const TaskStatus = IDL.Variant({
-    'red' : IDL.Null,
-    'blue' : IDL.Null,
-    'green' : IDL.Null,
-    'yellow' : IDL.Null,
-  });
-  const ExternalBlob = IDL.Vec(IDL.Nat8);
-  const ApprovalStatus = IDL.Variant({
-    'pending' : IDL.Null,
-    'approved' : IDL.Null,
-    'rejected' : IDL.Null,
-  });
-  const Task = IDL.Record({
-    'status' : TaskStatus,
-    'title' : IDL.Text,
-    'proofFile' : IDL.Opt(ExternalBlob),
-    'assignedTo' : IDL.Principal,
-    'completionTime' : IDL.Opt(Time),
-    'rejectionReason' : IDL.Opt(IDL.Text),
-    'description' : IDL.Text,
-    'performancePoints' : IDL.Int,
-    'deadline' : Time,
-    'approvalStatus' : ApprovalStatus,
-    'taskId' : IDL.Nat,
-    'priority' : TaskPriority,
-    'department' : Department,
   });
   
   return IDL.Service({
@@ -266,11 +298,12 @@ export const idlFactory = ({ IDL }) => {
     'approveTask' : IDL.Func([IDL.Nat], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole__1], [], []),
     'createTask' : IDL.Func(
-        [IDL.Text, Department, IDL.Principal, IDL.Text, Time, TaskPriority],
+        [IDL.Text, Department, IDL.Text, IDL.Text, Time, TaskPriority],
         [IDL.Nat],
         [],
       ),
     'deleteUser' : IDL.Func([IDL.Principal], [], []),
+    'getActiveUsers' : IDL.Func([], [IDL.Vec(UserSummary)], ['query']),
     'getAdminDashboard' : IDL.Func(
         [],
         [
@@ -283,11 +316,16 @@ export const idlFactory = ({ IDL }) => {
         ],
         ['query'],
       ),
+    'getAllTasks' : IDL.Func([], [IDL.Vec(TaskResponse)], ['query']),
     'getAllUsersStats' : IDL.Func([], [IDL.Vec(UserStats)], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole__1], ['query']),
-    'getTasksForCaller' : IDL.Func([], [IDL.Vec(Task)], ['query']),
-    'getTasksForUser' : IDL.Func([IDL.Principal], [IDL.Vec(Task)], ['query']),
+    'getTasksForCaller' : IDL.Func([], [IDL.Vec(TaskResponse)], ['query']),
+    'getTasksForUser' : IDL.Func(
+        [IDL.Principal],
+        [IDL.Vec(TaskResponse)],
+        ['query'],
+      ),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
         [IDL.Opt(UserProfile)],
@@ -302,7 +340,11 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'updateUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-    'uploadProofFile' : IDL.Func([IDL.Nat, ExternalBlob], [], []),
+    'uploadProofFile' : IDL.Func(
+        [IDL.Nat, ExternalBlob, IDL.Text, IDL.Text],
+        [],
+        [],
+      ),
   });
 };
 

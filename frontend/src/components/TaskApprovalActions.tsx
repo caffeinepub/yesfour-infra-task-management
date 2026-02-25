@@ -1,65 +1,55 @@
-import { useState } from 'react';
-import { Task, TaskStatus } from '../backend';
-import { useApproveTask } from '../hooks/useQueries';
-import RejectTaskModal from './RejectTaskModal';
+import React, { useState } from 'react';
+import { TaskResponse } from '../backend';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { CheckCircle, XCircle } from 'lucide-react';
+import { useApproveTask } from '../hooks/useQueries';
 import { toast } from 'sonner';
+import RejectTaskModal from './RejectTaskModal';
 
 interface TaskApprovalActionsProps {
-  task: Task;
+  task: TaskResponse;
 }
 
 export default function TaskApprovalActions({ task }: TaskApprovalActionsProps) {
-  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
   const approveTask = useApproveTask();
-
-  if (task.status !== TaskStatus.blue) return null;
 
   const handleApprove = async () => {
     try {
       await approveTask.mutateAsync(task.taskId);
-      toast.success('Task approved! Performance points awarded.');
-    } catch (err) {
-      toast.error('Failed to approve task. Please try again.');
+      toast.success('Task approved!');
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to approve task.');
     }
   };
 
   return (
     <>
-      <div className="flex items-center gap-2">
+      <div className="flex gap-2">
         <Button
           size="sm"
           onClick={handleApprove}
           disabled={approveTask.isPending}
-          className="bg-task-green hover:bg-task-green/90 text-white text-xs"
+          className="gap-1.5 bg-brand-green hover:bg-brand-green-dark text-white flex-1"
         >
-          {approveTask.isPending ? (
-            <Loader2 className="w-3 h-3 animate-spin" />
-          ) : (
-            <>
-              <CheckCircle className="w-3 h-3 mr-1" />
-              Approve
-            </>
-          )}
+          <CheckCircle className="w-3.5 h-3.5" />
+          {approveTask.isPending ? 'Approving...' : 'Approve'}
         </Button>
         <Button
           size="sm"
-          variant="outline"
-          onClick={() => setRejectModalOpen(true)}
-          disabled={approveTask.isPending}
-          className="border-task-red text-task-red hover:bg-task-red-bg text-xs"
+          variant="destructive"
+          onClick={() => setShowRejectModal(true)}
+          className="gap-1.5 flex-1"
         >
-          <XCircle className="w-3 h-3 mr-1" />
+          <XCircle className="w-3.5 h-3.5" />
           Reject
         </Button>
       </div>
 
       <RejectTaskModal
         taskId={task.taskId}
-        taskTitle={task.title}
-        open={rejectModalOpen}
-        onClose={() => setRejectModalOpen(false)}
+        open={showRejectModal}
+        onClose={() => setShowRejectModal(false)}
       />
     </>
   );

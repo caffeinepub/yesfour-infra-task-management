@@ -1,20 +1,19 @@
-import List "mo:core/List";
 import Text "mo:core/Text";
 import Map "mo:core/Map";
+import List "mo:core/List";
+import Iter "mo:core/Iter";
 import Int "mo:core/Int";
 import Time "mo:core/Time";
-import Order "mo:core/Order";
 import Array "mo:core/Array";
+import Order "mo:core/Order";
 import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
-import Migration "migration";
-import Iter "mo:core/Iter";
 import MixinStorage "blob-storage/Mixin";
 import Storage "blob-storage/Storage";
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
+import Migration "migration";
 
-// Strict migration with clause for actor state
 (with migration = Migration.run)
 actor {
   // Mixin state for file storage
@@ -35,9 +34,35 @@ actor {
     role : UserRole;
     performancePoints : Int;
     accountStatus : AccountStatus;
+    email : Text;
+  };
+
+  type UserSummary = {
+    principal : Principal;
+    name : Text;
+    email : Text;
+    department : Text;
   };
 
   let userProfiles = Map.empty<Principal, UserProfile>();
+
+  // Helper: returns true if the caller is an admin OR is a registered user
+  // whose profile role is #admin or #manager.
+  func isAdminOrManager(caller : Principal) : Bool {
+    if (AccessControl.isAdmin(accessControlState, caller)) {
+      return true;
+    };
+    switch (userProfiles.get(caller)) {
+      case (null) { false };
+      case (?profile) {
+        switch (profile.role) {
+          case (#admin) { true };
+          case (#manager) { true };
+          case (_) { false };
+        };
+      };
+    };
+  };
 
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
@@ -58,6 +83,30 @@ actor {
       Runtime.trap("Unauthorized: Only users can save their profiles");
     };
     userProfiles.add(caller, profile);
+  };
+
+  /// Returns all active users (name, email, department, principal).
+  /// Accessible by admins and managers only.
+  public query ({ caller }) func getActiveUsers() : async [UserSummary] {
+    if (not isAdminOrManager(caller)) {
+      Runtime.trap("Unauthorized: Only admins and managers can access active users");
+    };
+
+    let entries = userProfiles.entries();
+    let activeUsers : List.List<UserSummary> = List.empty<UserSummary>();
+
+    for ((principal, profile) in entries) {
+      if (profile.accountStatus == #active) {
+        activeUsers.add({
+          principal;
+          name = profile.name;
+          email = profile.email;
+          department = profile.department;
+        });
+      };
+    };
+
+    activeUsers.toArray();
   };
 
   // ── Admin User Management ────────────────────────────────────────────────
@@ -156,8 +205,10 @@ actor {
     #pending;
     #approved;
     #rejected;
+    #pendingReview;
   };
 
+  // Task as persisted in backend (internal)
   type Task = {
     taskId : Nat;
     title : Text;
@@ -168,19 +219,40 @@ actor {
     priority : TaskPriority;
     status : TaskStatus;
     proofFile : ?Storage.ExternalBlob;
+    proofSubmittedBy : ?Text;
+    proofSubmittedByEmail : ?Text;
+    submissionTimestamp : ?Time.Time;
     approvalStatus : ApprovalStatus;
     rejectionReason : ?Text;
     completionTime : ?Time.Time;
     performancePoints : Int;
   };
 
-  module Task {
-    public func compareByDeadline(task1 : Task, task2 : Task) : Order.Order {
-      Int.compare(task1.deadline, task2.deadline);
-    };
+  // Task as returned to frontend (filtered)
+  type TaskResponse = {
+    taskId : Nat;
+    title : Text;
+    department : Department;
+    assignedTo : Principal;
+    description : Text;
+    deadline : Time.Time;
+    priority : TaskPriority;
+    status : TaskStatus;
+    proofFile : ?Storage.ExternalBlob;
+    proofSubmittedBy : ?Text;
+    proofSubmittedByEmail : ?Text;
+    submissionTimestamp : ?Time.Time;
+    approvalStatus : ApprovalStatus;
+    rejectionReason : ?Text;
+    completionTime : ?Time.Time;
+    performancePoints : Int;
   };
 
-  var lastTaskId = 0;
+  func compareByDeadline(task1 : TaskResponse, task2 : TaskResponse) : Order.Order {
+    Int.compare(task1.deadline, task2.deadline);
+  };
+
+  var lastTaskId : Nat = 0;
 
   let tasks = Map.empty<Nat, Task>();
 
@@ -195,20 +267,50 @@ actor {
     };
   };
 
+  // ── Helper: convert Task to TaskResponse with proof field filtering ────────
+
+  /// Converts Task to TaskResponse, conditionally exposing proof fields only to
+  /// admins/managers or the assigned employee (task owner).
+  func toTaskResponse(task : Task, caller : Principal) : TaskResponse {
+    let allowProofFields = isAdminOrManager(caller) or (caller == task.assignedTo);
+
+    {
+      taskId = task.taskId;
+      title = task.title;
+      department = task.department;
+      assignedTo = task.assignedTo;
+      description = task.description;
+      deadline = task.deadline;
+      priority = task.priority;
+      status = task.status;
+      approvalStatus = task.approvalStatus;
+      rejectionReason = task.rejectionReason;
+      completionTime = task.completionTime;
+      performancePoints = task.performancePoints;
+      proofFile = if (allowProofFields) { task.proofFile } else { null };
+      proofSubmittedBy = if (allowProofFields) { task.proofSubmittedBy } else { null };
+      proofSubmittedByEmail = if (allowProofFields) { task.proofSubmittedByEmail } else { null };
+      submissionTimestamp = if (allowProofFields) { task.submissionTimestamp } else { null };
+    };
+  };
+
   // ── Task Endpoints ────────────────────────────────────────────────────────
 
-  /// Create a task. Admin-only (admins represent managers in this system).
+  /// Create a task. Accessible by admins and managers only.
+  /// Accepts an email address as the assignee identifier.
   public shared ({ caller }) func createTask(
     title : Text,
     department : Department,
-    assignedTo : Principal,
+    assigneeEmail : Text,
     description : Text,
     deadline : Time.Time,
     priority : TaskPriority,
   ) : async Nat {
-    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+    if (not isAdminOrManager(caller)) {
       Runtime.trap("Unauthorized: Only admins/managers can create tasks");
     };
+
+    let assignedTo = findPrincipalByEmail(assigneeEmail);
 
     let taskId = lastTaskId;
     let newTask : Task = {
@@ -221,6 +323,9 @@ actor {
       priority;
       status = #yellow;
       proofFile = null;
+      proofSubmittedBy = null;
+      proofSubmittedByEmail = null;
+      submissionTimestamp = null;
       approvalStatus = #pending;
       rejectionReason = null;
       completionTime = null;
@@ -232,8 +337,28 @@ actor {
     taskId;
   };
 
-  /// Upload proof for a task. Only the assigned employee.
-  public shared ({ caller }) func uploadProofFile(taskId : Nat, file : Storage.ExternalBlob) : async () {
+  /// Look up a principal by email address.
+  /// Traps with a specific message if the user does not exist or is not active.
+  func findPrincipalByEmail(email : Text) : Principal {
+    let entries = userProfiles.entries();
+    for ((principal, profile) in entries) {
+      if (Text.equal(profile.email, email)) {
+        switch (profile.accountStatus) {
+          case (#active) { return principal };
+          case (_) { Runtime.trap("User with this email is not active") };
+        };
+      };
+    };
+    Runtime.trap("User with this email does not exist.");
+  };
+
+  /// Upload proof for a task. Only the assigned employee can upload proof.
+  public shared ({ caller }) func uploadProofFile(
+    taskId : Nat,
+    file : Storage.ExternalBlob,
+    submittedByName : Text,
+    submittedByEmail : Text,
+  ) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only registered users can upload proof");
     };
@@ -244,7 +369,6 @@ actor {
         if (task.assignedTo != caller) {
           Runtime.trap("Unauthorized: Only the assigned employee can upload proof");
         };
-        // Cannot upload proof for an already-completed or overdue task
         let checkedTask = applyDeadlineCheck(task);
         if (checkedTask.status == #red) {
           tasks.add(taskId, checkedTask);
@@ -253,16 +377,20 @@ actor {
         let updatedTask : Task = {
           checkedTask with
           proofFile = ?file;
+          proofSubmittedBy = ?submittedByName;
+          proofSubmittedByEmail = ?submittedByEmail;
+          submissionTimestamp = ?Time.now();
           status = #blue;
+          approvalStatus = #pendingReview;
         };
         tasks.add(taskId, updatedTask);
       };
     };
   };
 
-  /// Approve a task. Admin-only (admins represent managers in this system).
+  /// Approve a task. Accessible by admins and managers only.
   public shared ({ caller }) func approveTask(taskId : Nat) : async () {
-    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+    if (not isAdminOrManager(caller)) {
       Runtime.trap("Unauthorized: Only admins/managers can approve tasks");
     };
 
@@ -295,9 +423,9 @@ actor {
     };
   };
 
-  /// Reject a task. Admin-only (admins represent managers in this system).
+  /// Reject a task. Accessible by admins and managers only.
   public shared ({ caller }) func rejectTask(taskId : Nat, reason : Text) : async () {
-    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+    if (not isAdminOrManager(caller)) {
       Runtime.trap("Unauthorized: Only admins/managers can reject tasks");
     };
 
@@ -316,34 +444,54 @@ actor {
   };
 
   /// Get tasks for a specific user.
-  /// Admins can query any user; a regular user can only query their own tasks.
-  public query ({ caller }) func getTasksForUser(user : Principal) : async [Task] {
-    if (caller != user and not AccessControl.isAdmin(accessControlState, caller)) {
+  /// Admins/managers can view any user's tasks with full proof data.
+  /// An employee can only view their own tasks (with proof data).
+  /// No other caller may access this endpoint.
+  public query ({ caller }) func getTasksForUser(user : Principal) : async [TaskResponse] {
+    if (caller != user and not isAdminOrManager(caller)) {
       Runtime.trap("Unauthorized: Can only view your own tasks");
     };
 
-    let userTasks = List.empty<Task>();
+    let userTasks = List.empty<TaskResponse>();
     for ((_, task) in tasks.entries()) {
       if (task.assignedTo == user) {
-        userTasks.add(applyDeadlineCheck(task));
+        let checked = applyDeadlineCheck(task);
+        userTasks.add(toTaskResponse(checked, caller));
       };
     };
-    userTasks.toArray().sort(Task.compareByDeadline);
+    userTasks.toArray().sort(compareByDeadline);
   };
 
-  /// Get tasks assigned to the caller. Requires at least a registered user.
-  public query ({ caller }) func getTasksForCaller() : async [Task] {
+  /// Get tasks assigned to the caller.
+  /// Proof fields are visible because the caller is the assigned employee.
+  public query ({ caller }) func getTasksForCaller() : async [TaskResponse] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only registered users can view their tasks");
     };
 
-    let userTasks = List.empty<Task>();
+    let userTasks = List.empty<TaskResponse>();
     for ((_, task) in tasks.entries()) {
       if (task.assignedTo == caller) {
-        userTasks.add(applyDeadlineCheck(task));
+        let checked = applyDeadlineCheck(task);
+        userTasks.add(toTaskResponse(checked, caller));
       };
     };
-    userTasks.toArray().sort(Task.compareByDeadline);
+    userTasks.toArray().sort(compareByDeadline);
+  };
+
+  /// Get all tasks. Accessible by admins and managers only.
+  /// Proof fields are included because only admins/managers can call this.
+  public query ({ caller }) func getAllTasks() : async [TaskResponse] {
+    if (not isAdminOrManager(caller)) {
+      Runtime.trap("Unauthorized: Only admins/managers can view all tasks");
+    };
+
+    let allTasks = List.empty<TaskResponse>();
+    for ((_, task) in tasks.entries()) {
+      let checked = applyDeadlineCheck(task);
+      allTasks.add(toTaskResponse(checked, caller));
+    };
+    allTasks.toArray().sort(compareByDeadline);
   };
 
   /// Admin dashboard: aggregate statistics.

@@ -12,7 +12,8 @@ import type { Principal } from '@icp-sdk/core/principal';
 
 export type AccountStatus = { 'active' : null } |
   { 'inactive' : null };
-export type ApprovalStatus = { 'pending' : null } |
+export type ApprovalStatus = { 'pendingReview' : null } |
+  { 'pending' : null } |
   { 'approved' : null } |
   { 'rejected' : null };
 export type Department = { 'construction' : null } |
@@ -21,24 +22,27 @@ export type Department = { 'construction' : null } |
   { 'travelDesk' : null } |
   { 'apartments' : null };
 export type ExternalBlob = Uint8Array;
-export interface Task {
+export type TaskPriority = { 'low' : null } |
+  { 'high' : null } |
+  { 'medium' : null };
+export interface TaskResponse {
   'status' : TaskStatus,
   'title' : string,
   'proofFile' : [] | [ExternalBlob],
   'assignedTo' : Principal,
   'completionTime' : [] | [Time],
+  'submissionTimestamp' : [] | [Time],
   'rejectionReason' : [] | [string],
   'description' : string,
   'performancePoints' : bigint,
   'deadline' : Time,
   'approvalStatus' : ApprovalStatus,
   'taskId' : bigint,
+  'proofSubmittedBy' : [] | [string],
   'priority' : TaskPriority,
+  'proofSubmittedByEmail' : [] | [string],
   'department' : Department,
 }
-export type TaskPriority = { 'low' : null } |
-  { 'high' : null } |
-  { 'medium' : null };
 export type TaskStatus = { 'red' : null } |
   { 'blue' : null } |
   { 'green' : null } |
@@ -49,6 +53,7 @@ export interface UserProfile {
   'name' : string,
   'role' : UserRole,
   'performancePoints' : bigint,
+  'email' : string,
   'department' : string,
 }
 export type UserRole = { 'manager' : null } |
@@ -62,6 +67,12 @@ export interface UserStats {
   'tasksCompleted' : bigint,
   'performancePoints' : bigint,
   'profile' : UserProfile,
+}
+export interface UserSummary {
+  'principal' : Principal,
+  'name' : string,
+  'email' : string,
+  'department' : string,
 }
 export interface _CaffeineStorageCreateCertificateResult {
   'method' : string,
@@ -92,18 +103,24 @@ export interface _SERVICE {
   '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   /**
-   * / Approve a task. Admin-only (admins represent managers in this system).
+   * / Approve a task. Accessible by admins and managers only.
    */
   'approveTask' : ActorMethod<[bigint], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole__1], undefined>,
   /**
-   * / Create a task. Admin-only (admins represent managers in this system).
+   * / Create a task. Accessible by admins and managers only.
+   * / Accepts an email address as the assignee identifier.
    */
   'createTask' : ActorMethod<
-    [string, Department, Principal, string, Time, TaskPriority],
+    [string, Department, string, string, Time, TaskPriority],
     bigint
   >,
   'deleteUser' : ActorMethod<[Principal], undefined>,
+  /**
+   * / Returns all active users (name, email, department, principal).
+   * / Accessible by admins and managers only.
+   */
+  'getActiveUsers' : ActorMethod<[], Array<UserSummary>>,
   /**
    * / Admin dashboard: aggregate statistics.
    */
@@ -116,22 +133,30 @@ export interface _SERVICE {
       'lateTasks' : bigint,
     }
   >,
+  /**
+   * / Get all tasks. Accessible by admins and managers only.
+   * / Proof fields are included because only admins/managers can call this.
+   */
+  'getAllTasks' : ActorMethod<[], Array<TaskResponse>>,
   'getAllUsersStats' : ActorMethod<[], Array<UserStats>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole__1>,
   /**
-   * / Get tasks assigned to the caller. Requires at least a registered user.
+   * / Get tasks assigned to the caller.
+   * / Proof fields are visible because the caller is the assigned employee.
    */
-  'getTasksForCaller' : ActorMethod<[], Array<Task>>,
+  'getTasksForCaller' : ActorMethod<[], Array<TaskResponse>>,
   /**
    * / Get tasks for a specific user.
-   * / Admins can query any user; a regular user can only query their own tasks.
+   * / Admins/managers can view any user's tasks with full proof data.
+   * / An employee can only view their own tasks (with proof data).
+   * / No other caller may access this endpoint.
    */
-  'getTasksForUser' : ActorMethod<[Principal], Array<Task>>,
+  'getTasksForUser' : ActorMethod<[Principal], Array<TaskResponse>>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   /**
-   * / Reject a task. Admin-only (admins represent managers in this system).
+   * / Reject a task. Accessible by admins and managers only.
    */
   'rejectTask' : ActorMethod<[bigint, string], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
@@ -141,9 +166,12 @@ export interface _SERVICE {
   >,
   'updateUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   /**
-   * / Upload proof for a task. Only the assigned employee.
+   * / Upload proof for a task. Only the assigned employee can upload proof.
    */
-  'uploadProofFile' : ActorMethod<[bigint, ExternalBlob], undefined>,
+  'uploadProofFile' : ActorMethod<
+    [bigint, ExternalBlob, string, string],
+    undefined
+  >,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

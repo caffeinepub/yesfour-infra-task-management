@@ -1,12 +1,13 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 5,
+  "projectStateVersion": 9,
   "summary": "Full-stack internal task management web app for Yesfour Infra (real estate & construction). React + Node.js/Express + MongoDB + JWT auth. Strict productivity workflow: Assign → Work → Upload Proof → Approve. Three roles: Admin, Manager, Employee. Status color system (Red/Yellow/Blue/Green), performance points, department filtering, file uploads via Multer, real-time task status notifications via Socket.io (no chat).",
   "architectural_notes": [
     "Tech stack: React frontend, Node.js/Express backend, MongoDB database, JWT auth, Multer file storage, Socket.io for real-time notifications",
     "UI theme: white + green corporate minimal design; status colors Red/Yellow/Blue/Green must be clearly visible",
     "Departments: Construction, Marketing, Travel Desk, Accounts, Apartments",
-    "No chat, no email integration, no discussion features — strictly task workflow only"
+    "No chat, no email integration, no discussion features — strictly task workflow only",
+    "Proof files stored in a protected server folder; access via signed temporary URLs (5-min expiry) for Admin; employees can only access their own proof via JWT-verified route"
   ],
   "known_issues": [],
   "isFixRequest": false,
@@ -112,6 +113,46 @@
       "title": "Ensure the Users List page and all its controls are styled with the existing Yesfour Infra corporate theme: white backgrounds, green (#2E7D32) primary accent, subtle grey borders, clean sans-serif typography, and card-based layouts. The page must be responsive and must not introduce any chat or messaging UI elements.",
       "reqIds": [
         "REQ-19"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-taskcreationform-component-to-replace-the-assign-to-principal-id-text-input-with-a-searchable-autocomplete-dropdown-the-dropdown-must-fetch-active-users-via-the-getactiveusers-backend-query-and-display-each-option-as-full-name-email-e-g-arun-kumar-arun-yesfour-com-on-selection-the-form-internally-stores-the-selected-user-s-email-to-pass-to-the-backend-the-field-label-must-read-assign-to-login-email-id-and-the-search-input-placeholder-must-read-enter-employee-login-email-e-g-employee-yesfour-com-apply-client-side-email-format-validation-and-show-an-inline-error-if-the-entered-value-does-not-match-a-valid-email-format-show-a-backend-returned-error-e-g-user-not-found-or-inactive-inline-below-the-field-do-not-change-any-other-field-layout-or-styling-beyond-this-field-update",
+      "title": "Update the TaskCreationForm component to replace the 'Assign To (Principal ID)' text input with a searchable autocomplete dropdown. The dropdown must fetch active users via the getActiveUsers backend query and display each option as 'Full Name (Email)' (e.g., 'Arun Kumar (arun@yesfour.com)'). On selection, the form internally stores the selected user's email to pass to the backend. The field label must read 'Assign To (Login Email ID)' and the search input placeholder must read 'Enter employee login email (e.g. employee@yesfour.com)'. Apply client-side email format validation and show an inline error if the entered value does not match a valid email format. Show a backend-returned error (e.g., user not found or inactive) inline below the field. Do not change any other field, layout, or styling beyond this field update.",
+      "reqIds": [
+        "REQ-22"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-on-the-employee-dashboard-employeedashboard-tsx-proofuploadbutton-tsx-ensure-that-1-each-employee-can-only-see-their-own-uploaded-proof-file-rendered-inline-or-as-a-link-within-their-own-task-card-2-proof-files-belonging-to-other-employees-are-never-fetched-or-displayed-3-after-upload-a-pending-review-label-or-badge-appears-on-the-task-card-to-communicate-status-to-the-employee",
+      "title": "On the Employee Dashboard (EmployeeDashboard.tsx / ProofUploadButton.tsx), ensure that: (1) each employee can only see their own uploaded proof file (rendered inline or as a link) within their own task card; (2) proof files belonging to other employees are never fetched or displayed; (3) after upload, a 'Pending Review' label or badge appears on the task card to communicate status to the employee.",
+      "reqIds": [
+        "REQ-25"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-the-admin-dashboard-all-tasks-view-admindashboard-tsx-globaltasklist-tsx-taskcard-tsx-add-admin-only-visible-fields-to-each-task-entry-a-blue-proof-uploaded-badge-shown-when-prooffile-exists-a-view-proof-button-that-fetches-and-opens-the-proof-image-preview-or-pdf-in-a-modal-or-new-tab-a-download-proof-option-the-submission-timestamp-formatted-as-a-human-readable-date-time-string-and-the-submitted-by-field-showing-employee-name-and-email-these-fields-must-be-completely-hidden-for-manager-and-employee-roles",
+      "title": "In the Admin Dashboard → All Tasks view (AdminDashboard.tsx / GlobalTaskList.tsx / TaskCard.tsx), add Admin-only visible fields to each task entry: a blue 'Proof Uploaded' badge (shown when proofFile exists), a 'View Proof' button that fetches and opens the proof (image preview or PDF) in a modal or new tab, a 'Download Proof' option, the Submission Timestamp formatted as a human-readable date/time string, and the Submitted By field showing Employee Name and Email. These fields must be completely hidden for Manager and Employee roles.",
+      "reqIds": [
+        "REQ-26"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-an-admin-only-proof-review-panel-section-inside-the-admin-task-detail-expanded-view-in-the-admin-dashboard-the-panel-must-display-employee-name-an-uploaded-file-preview-image-thumbnail-or-pdf-icon-with-filename-uploaded-date-time-an-approve-button-calls-the-existing-approve-mutation-and-a-reject-button-that-opens-a-modal-requiring-a-rejection-reason-text-input-before-submission-add-three-status-indicator-badges-used-throughout-the-admin-view-a-blue-badge-labelled-proof-uploaded-a-green-badge-labelled-approved-and-a-red-badge-labelled-rejected-reflecting-the-current-approvalstatus-of-the-task",
+      "title": "Add an Admin-only Proof Review Panel section inside the Admin Task detail/expanded view in the Admin Dashboard. The panel must display: Employee Name, an uploaded file preview (image thumbnail or PDF icon with filename), Uploaded Date & Time, an Approve button (calls the existing approve mutation), and a Reject button that opens a modal requiring a rejection reason text input before submission. Add three status indicator badges used throughout the Admin view: a blue badge labelled 'Proof Uploaded', a green badge labelled 'Approved', and a red badge labelled 'Rejected', reflecting the current approvalStatus of the task.",
+      "reqIds": [
+        "REQ-27"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-usequeries-ts-hooks-and-any-relevant-react-query-fetch-logic-to-ensure-1-proof-related-fields-prooffile-url-submittedbyname-submittedbyemail-submissiontimestamp-are-only-requested-and-stored-client-side-when-the-authenticated-user-is-admin-or-the-task-s-own-assignee-2-a-getprooffortask-taskid-query-hook-is-added-that-calls-the-protected-backend-query-and-is-only-invoked-from-admin-role-views-or-the-employee-s-own-task-view",
+      "title": "Update the useQueries.ts hooks and any relevant React Query fetch logic to ensure: (1) proof-related fields (proofFile URL, submittedByName, submittedByEmail, submissionTimestamp) are only requested and stored client-side when the authenticated user is Admin or the task's own assignee; (2) a getProofForTask(taskId) query hook is added that calls the protected backend query and is only invoked from Admin-role views or the employee's own task view.",
+      "reqIds": [
+        "REQ-28"
       ],
       "version": 1
     }
@@ -228,6 +269,62 @@
       "summary": "Add backend mutations in the Motoko actor for admin user management: (1) update a user's role (Admin / Manager / Employee), (2) toggle a user's account status (Active / Inactive), and (3) delete a user record. All three mutations must be restricted to Admin principals only.",
       "reqIds": [
         "REQ-13"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-19",
+      "summary": "Update 'Assign To' field in Create Task form: rename label to 'Assign To (Login Email ID)', replace principal ID input with searchable autocomplete dropdown listing active users as 'Full Name (Email)', validate email exists and user is active, store assignedTo as user._id in DB",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-20",
+      "summary": "Add a backend query in the Motoko actor that returns all active users (accountStatus = #active) with their principal ID, full name, email, and department. This endpoint must be accessible by Admin and Manager roles only, and must never return password or credential data. It will be used to populate the assignee autocomplete dropdown in the task creation form.",
+      "reqIds": [
+        "REQ-20"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-21",
+      "summary": "Update the createTask backend mutation in the Motoko actor to accept an email address as the assignee identifier instead of a raw principal ID. The mutation must look up the user by email, return an error 'User with this email does not exist.' if no match is found, reject the request if the matched user's accountStatus is not #active, and store the resolved user's internal ID (principal/key) as the assignedTo field on the task record.",
+      "reqIds": [
+        "REQ-21"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-22",
+      "summary": "Role-based proof file visibility: Employees see only their own proof; Admin sees all proofs with Proof Uploaded badge, View Proof button, Download option, Submission Timestamp, and Submitted By fields in Admin Dashboard All Tasks view",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-23",
+      "summary": "Protect proof access route GET /tasks/proof/:taskId — allow only Admin or the assigned employee (own task); return 403 for all others. Return safe download URLs only, never expose full server paths. Generate signed temporary URLs (valid 5 minutes) when Admin clicks View Proof.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-24",
+      "summary": "Add Admin-only Proof Review Panel inside Admin Task View: Employee Name, uploaded file preview, uploaded date/time, Approve button, Reject button with reason input. Add blue 'Proof Uploaded', green 'Approved', and red 'Rejected' status badges.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-25",
+      "summary": "Update the backend Motoko actor so that proof file data (proofFile blob/path, submittedBy, submissionTimestamp) stored on a task record is only returned in query responses to the Admin role or the employee who is the assignedTo principal of that specific task. For all other callers, these fields must be omitted or nulled out in the returned task record.",
+      "reqIds": [
+        "REQ-23"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-26",
+      "summary": "Extend the task data model in the Motoko backend to ensure that when an employee uploads proof, the task stores: proofFile (safe relative URL or blob key — never a full server path), submittedByName (employee full name), submittedByEmail (employee email), and submissionTimestamp (nanosecond timestamp). The task's approvalStatus must be set to #pendingReview upon proof upload, and status must transition to Blue (#blue) at that point.",
+      "reqIds": [
+        "REQ-24"
       ],
       "status": "pending"
     }

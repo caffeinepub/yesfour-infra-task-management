@@ -49,7 +49,7 @@ export default function EditUserRoleModal({
   const handleSave = async () => {
     if (!userPrincipal) return;
     try {
-      await updateRole.mutateAsync({ user: userPrincipal, newRole: selectedRole });
+      await updateRole.mutateAsync({ user: userPrincipal.toString(), newRole: selectedRole });
       toast.success(`Role updated to ${roleLabels[selectedRole]} for ${userName}`);
       onClose();
     } catch (err: unknown) {
