@@ -1,86 +1,75 @@
+import React from 'react';
+import { BarChart2 } from 'lucide-react';
 import { TaskResponse, TaskStatus } from '../backend';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart3 } from 'lucide-react';
 
 interface DepartmentProductivityPanelProps {
   tasks: TaskResponse[];
 }
 
-const STATUS_LABELS: Record<TaskStatus, string> = {
-  [TaskStatus.red]: 'Overdue',
-  [TaskStatus.yellow]: 'In Progress',
-  [TaskStatus.blue]: 'Under Review',
-  [TaskStatus.green]: 'Completed',
-};
+function getStatusKey(status: unknown): string {
+  if (typeof status === 'string') return status;
+  if (typeof status === 'object' && status !== null) return Object.keys(status)[0];
+  return String(status);
+}
 
-const STATUS_COLORS: Record<TaskStatus, string> = {
-  [TaskStatus.red]: 'bg-task-red',
-  [TaskStatus.yellow]: 'bg-task-yellow',
-  [TaskStatus.blue]: 'bg-task-blue',
-  [TaskStatus.green]: 'bg-task-green',
-};
+function getDeptKey(dept: unknown): string {
+  if (typeof dept === 'string') return dept;
+  if (typeof dept === 'object' && dept !== null) return Object.keys(dept)[0];
+  return String(dept);
+}
 
 export default function DepartmentProductivityPanel({ tasks }: DepartmentProductivityPanelProps) {
-  const statusCounts = tasks.reduce(
-    (acc, task) => {
-      const statusObj = task.status as unknown as Record<string, null>;
-      const key = Object.keys(statusObj)[0] as TaskStatus;
-      acc[key] = (acc[key] || 0) + 1;
-      return acc;
-    },
-    {} as Record<TaskStatus, number>,
-  );
+  const deptStats: Record<string, { total: number; completed: number; points: number }> = {};
 
-  const totalPoints = tasks.reduce((sum, task) => sum + Number(task.performancePoints), 0);
-  const completionRate =
-    tasks.length > 0
-      ? Math.round(((statusCounts[TaskStatus.green] || 0) / tasks.length) * 100)
-      : 0;
+  for (const task of tasks) {
+    const dept = getDeptKey(task.department);
+    if (!deptStats[dept]) {
+      deptStats[dept] = { total: 0, completed: 0, points: 0 };
+    }
+    deptStats[dept].total += 1;
+    const statusKey = getStatusKey(task.status);
+    if (statusKey === TaskStatus.green) {
+      deptStats[dept].completed += 1;
+    }
+    deptStats[dept].points += Number(task.performancePoints);
+  }
+
+  const departments = Object.entries(deptStats);
+
+  if (departments.length === 0) {
+    return (
+      <div className="text-center py-8 text-gray-400">
+        <BarChart2 className="w-10 h-10 mx-auto mb-2 opacity-40" />
+        <p>No task data available</p>
+      </div>
+    );
+  }
 
   return (
-    <Card className="shadow-card border-border">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base font-semibold">
-          <BarChart3 className="w-5 h-5 text-brand-green" />
-          Department Productivity
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Status breakdown */}
-        <div className="grid grid-cols-2 gap-2">
-          {(Object.values(TaskStatus) as TaskStatus[]).map((status) => (
-            <div key={status} className="flex items-center gap-2 p-2 rounded-md bg-muted/50">
-              <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${STATUS_COLORS[status]}`} />
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground truncate">{STATUS_LABELS[status]}</p>
-                <p className="text-sm font-bold text-foreground">{statusCounts[status] || 0}</p>
-              </div>
+    <div className="space-y-4">
+      {departments.map(([dept, stats]) => {
+        const completionRate = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
+        return (
+          <div key={dept} className="bg-white rounded-lg shadow-card p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-semibold text-gray-800 capitalize">{dept}</span>
+              <span className="text-sm text-gray-500">{stats.total} tasks</span>
             </div>
-          ))}
-        </div>
-
-        {/* Summary stats */}
-        <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border">
-          <div className="text-center">
-            <p className="text-2xl font-bold text-brand-green">{completionRate}%</p>
-            <p className="text-xs text-muted-foreground">Completion Rate</p>
+            <div className="w-full bg-gray-100 rounded-full h-2 mb-2">
+              <div
+                className="bg-brand-green h-2 rounded-full transition-all"
+                style={{ width: `${completionRate}%` }}
+              />
+            </div>
+            <div className="flex justify-between text-xs text-gray-500">
+              <span>{completionRate}% complete</span>
+              <span className={stats.points >= 0 ? 'text-green-600' : 'text-red-500'}>
+                {stats.points >= 0 ? '+' : ''}{stats.points} pts
+              </span>
+            </div>
           </div>
-          <div className="text-center">
-            <p
-              className={`text-2xl font-bold ${totalPoints >= 0 ? 'text-task-green' : 'text-task-red'}`}
-            >
-              {totalPoints >= 0 ? '+' : ''}
-              {totalPoints}
-            </p>
-            <p className="text-xs text-muted-foreground">Total Points</p>
-          </div>
-        </div>
-
-        <div className="text-center pt-1 border-t border-border">
-          <p className="text-lg font-bold text-foreground">{tasks.length}</p>
-          <p className="text-xs text-muted-foreground">Total Tasks</p>
-        </div>
-      </CardContent>
-    </Card>
+        );
+      })}
+    </div>
   );
 }

@@ -1,106 +1,79 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from '@tanstack/react-router';
-import { useAuth } from '../hooks/useAuth';
-import { useGetTasksForCaller } from '../hooks/useQueries';
-import { TaskStatus } from '../backend';
-import TaskCreationForm from '../components/TaskCreationForm';
-import DepartmentProductivityPanel from '../components/DepartmentProductivityPanel';
-import GlobalTaskList from '../components/GlobalTaskList';
-import { Skeleton } from '@/components/ui/skeleton';
+import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PlusCircle, ClipboardCheck, BarChart3 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import TaskCreationForm from '../components/TaskCreationForm';
+import GlobalTaskList from '../components/GlobalTaskList';
+import DepartmentProductivityPanel from '../components/DepartmentProductivityPanel';
+import { useGetAllTasks } from '../hooks/useQueries';
+import { useInternetIdentity } from '../hooks/useInternetIdentity';
+import { TaskStatus } from '../backend';
+
+function getStatusKey(status: unknown): string {
+  if (typeof status === 'string') return status;
+  if (typeof status === 'object' && status !== null) return Object.keys(status)[0];
+  return String(status);
+}
 
 export default function ManagerDashboard() {
-  const { isAuthenticated, userProfile, showProfileSetup, isAdmin, isManager } = useAuth();
-  const navigate = useNavigate();
-  const { data: tasks, isLoading } = useGetTasksForCaller();
+  const { identity } = useInternetIdentity();
+  const { data: allTasks = [], isLoading } = useGetAllTasks();
+  const currentUserPrincipal = identity?.getPrincipal().toString();
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate({ to: '/login' });
-      return;
-    }
-    if (showProfileSetup) {
-      navigate({ to: '/profile-setup' });
-    }
-  }, [isAuthenticated, showProfileSetup, navigate]);
+  const blueTasks = allTasks.filter(
+    (t) => getStatusKey(t.status) === TaskStatus.blue,
+  );
 
-  // Filter tasks by manager's department if they are a manager (not admin)
-  const departmentTasks = tasks ?? [];
-  const pendingApprovalTasks = departmentTasks.filter((t) => t.status === TaskStatus.blue);
+  if (isLoading) {
+    return (
+      <div className="p-6 space-y-4">
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
+    <div className="p-4 md:p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Manager Dashboard</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          {userProfile?.name && <span className="font-semibold text-foreground">{userProfile.name}</span>}
-          {userProfile?.department && <span> · {userProfile.department}</span>}
-          {isAdmin && <span className="ml-2 text-xs bg-task-red-bg text-task-red px-2 py-0.5 rounded-full font-medium">Admin</span>}
-        </p>
+        <h1 className="text-2xl font-bold text-gray-900">Manager Dashboard</h1>
+        <p className="text-gray-500 text-sm mt-1">Create tasks, review submissions, and track team productivity</p>
       </div>
 
-      <Tabs defaultValue="create" className="space-y-4">
-        <TabsList className="bg-muted/50 border border-border">
-          <TabsTrigger value="create" className="flex items-center gap-1.5 text-xs">
-            <PlusCircle className="w-3.5 h-3.5" />
-            Create Task
-          </TabsTrigger>
-          <TabsTrigger value="review" className="flex items-center gap-1.5 text-xs">
-            <ClipboardCheck className="w-3.5 h-3.5" />
-            Review Tasks
-            {pendingApprovalTasks.length > 0 && (
-              <span className="ml-1 bg-task-blue text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
-                {pendingApprovalTasks.length}
+      <Tabs defaultValue="create">
+        <TabsList className="mb-4">
+          <TabsTrigger value="create">Create Task</TabsTrigger>
+          <TabsTrigger value="review">
+            Review Submissions
+            {blueTasks.length > 0 && (
+              <span className="ml-2 bg-task-blue text-white text-xs rounded-full px-1.5 py-0.5">
+                {blueTasks.length}
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="productivity" className="flex items-center gap-1.5 text-xs">
-            <BarChart3 className="w-3.5 h-3.5" />
-            Productivity
-          </TabsTrigger>
+          <TabsTrigger value="productivity">Productivity</TabsTrigger>
         </TabsList>
 
-        {/* Create Task Tab */}
-        <TabsContent value="create" className="space-y-0">
+        <TabsContent value="create">
           <TaskCreationForm />
         </TabsContent>
 
-        {/* Review Tasks Tab */}
-        <TabsContent value="review" className="space-y-4">
-          <div>
-            <h2 className="text-base font-semibold text-foreground mb-1">Tasks Awaiting Review</h2>
-            <p className="text-xs text-muted-foreground mb-4">
-              Tasks with uploaded proof are shown below. Approve or reject each submission.
-            </p>
-            {isLoading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {[1, 2].map((i) => <Skeleton key={i} className="h-48 rounded-lg" />)}
-              </div>
-            ) : (
-              <GlobalTaskList tasks={departmentTasks} showApprovalActions={true} />
-            )}
-          </div>
+        <TabsContent value="review">
+          {blueTasks.length === 0 ? (
+            <div className="text-center py-12 text-gray-400">
+              <p className="text-lg font-medium">No pending submissions</p>
+              <p className="text-sm">Tasks submitted for review will appear here</p>
+            </div>
+          ) : (
+            <GlobalTaskList
+              tasks={blueTasks}
+              isAdminView={true}
+              currentUserPrincipal={currentUserPrincipal}
+            />
+          )}
         </TabsContent>
 
-        {/* Productivity Tab */}
-        <TabsContent value="productivity" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div className="lg:col-span-1">
-              <DepartmentProductivityPanel tasks={departmentTasks} />
-            </div>
-            <div className="lg:col-span-2">
-              <h2 className="text-base font-semibold text-foreground mb-3">All Department Tasks</h2>
-              {isLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {[1, 2].map((i) => <Skeleton key={i} className="h-48 rounded-lg" />)}
-                </div>
-              ) : (
-                <GlobalTaskList tasks={departmentTasks} showApprovalActions={false} />
-              )}
-            </div>
-          </div>
+        <TabsContent value="productivity">
+          <DepartmentProductivityPanel tasks={allTasks} />
         </TabsContent>
       </Tabs>
     </div>

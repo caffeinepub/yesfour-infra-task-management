@@ -1,42 +1,49 @@
+import React from 'react';
+import { Trophy } from 'lucide-react';
 import { Principal } from '@dfinity/principal';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { useGetUserProfile } from '../hooks/useQueries';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Trophy, Medal } from 'lucide-react';
 
-interface LeaderboardEntry {
-  principal: Principal;
-  points: bigint;
+interface LeaderboardEntryProps {
   rank: number;
+  principalStr: string;
+  points: bigint;
 }
 
-function LeaderboardRow({ entry }: { entry: LeaderboardEntry }) {
-  const { data: profile } = useGetUserProfile(entry.principal.toString());
-  const points = Number(entry.points);
+function LeaderboardEntry({ rank, principalStr, points }: LeaderboardEntryProps) {
+  const { data: profile } = useGetUserProfile(principalStr);
 
-  const rankDisplay = () => {
-    if (entry.rank === 1) return <span className="text-yellow-500 font-bold">🥇</span>;
-    if (entry.rank === 2) return <span className="text-gray-400 font-bold">🥈</span>;
-    if (entry.rank === 3) return <span className="text-amber-600 font-bold">🥉</span>;
-    return <span className="text-muted-foreground font-medium">#{entry.rank}</span>;
+  const rankColors: Record<number, string> = {
+    1: 'text-yellow-500',
+    2: 'text-gray-400',
+    3: 'text-amber-600',
   };
+  const rankColor = rankColors[rank] ?? 'text-gray-500';
 
   return (
-    <TableRow className="hover:bg-muted/30">
-      <TableCell className="font-medium text-center w-12">{rankDisplay()}</TableCell>
-      <TableCell>
-        <div>
-          <p className="font-semibold text-sm text-foreground">{profile?.name ?? 'Loading...'}</p>
-          <p className="text-xs text-muted-foreground">{profile?.department ?? ''}</p>
-        </div>
+    <TableRow>
+      <TableCell className={`font-bold text-lg ${rankColor}`}>
+        {rank <= 3 ? <Trophy className="w-5 h-5 inline mr-1" /> : null}
+        {rank}
       </TableCell>
-      <TableCell className="text-xs text-muted-foreground capitalize">
-        {profile?.role ?? '—'}
+      <TableCell className="font-medium">{profile?.name ?? '—'}</TableCell>
+      <TableCell className="text-gray-500">{profile?.department ?? '—'}</TableCell>
+      <TableCell className="text-gray-500 capitalize">
+        {profile?.role != null
+          ? typeof profile.role === 'string'
+            ? profile.role
+            : Object.keys(profile.role)[0]
+          : '—'}
       </TableCell>
-      <TableCell className="text-right">
-        <span className={`font-bold text-sm ${points >= 0 ? 'text-task-green' : 'text-task-red'}`}>
-          {points >= 0 ? '+' : ''}{points}
-        </span>
+      <TableCell className={`font-bold ${Number(points) >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+        {Number(points) >= 0 ? '+' : ''}{Number(points)}
       </TableCell>
     </TableRow>
   );
@@ -47,44 +54,39 @@ interface LeaderboardTableProps {
 }
 
 export default function LeaderboardTable({ leaderboard }: LeaderboardTableProps) {
-  const entries: LeaderboardEntry[] = leaderboard.map(([principal, points], index) => ({
-    principal,
-    points,
-    rank: index + 1,
-  }));
+  if (leaderboard.length === 0) {
+    return (
+      <div className="text-center py-12 text-gray-400">
+        <Trophy className="w-12 h-12 mx-auto mb-3 opacity-40" />
+        <p className="text-lg font-medium">No leaderboard data yet</p>
+        <p className="text-sm">Complete tasks to appear on the leaderboard</p>
+      </div>
+    );
+  }
 
   return (
-    <Card className="shadow-card border-border">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base font-semibold">
-          <Trophy className="w-5 h-5 text-yellow-500" />
-          Performance Leaderboard
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-0">
-        {entries.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
-            <Medal className="w-10 h-10 mb-2 opacity-30" />
-            <p className="text-sm">No performance data yet</p>
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/30">
-                <TableHead className="text-center w-12">Rank</TableHead>
-                <TableHead>Employee</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead className="text-right">Points</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {entries.map((entry) => (
-                <LeaderboardRow key={entry.principal.toString()} entry={entry} />
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-    </Card>
+    <div className="bg-white rounded-lg shadow-card overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-16">Rank</TableHead>
+            <TableHead>Name</TableHead>
+            <TableHead>Department</TableHead>
+            <TableHead>Role</TableHead>
+            <TableHead>Points</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {leaderboard.map(([principal, points], index) => (
+            <LeaderboardEntry
+              key={principal.toString()}
+              rank={index + 1}
+              principalStr={principal.toString()}
+              points={points}
+            />
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }

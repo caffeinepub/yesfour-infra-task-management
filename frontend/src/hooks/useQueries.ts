@@ -1,11 +1,21 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import { useInternetIdentity } from './useInternetIdentity';
+import {
+  UserProfile,
+  TaskResponse,
+  UserStats,
+  UserSummary,
+  Department,
+  TaskPriority,
+  UserRole,
+  AccountStatus,
+  ApprovalStatus,
+  ExternalBlob,
+  FinalStatus,
+} from '../backend';
 import { Principal } from '@dfinity/principal';
-import type { UserProfile, TaskResponse, Department, TaskPriority, UserRole, AccountStatus } from '../backend';
-import { ExternalBlob } from '../backend';
 
-// ── User Profile ──────────────────────────────────────────────────────────
+// ── User Profile Hooks ────────────────────────────────────────────────────────
 
 export function useGetCallerUserProfile() {
   const { actor, isFetching: actorFetching } = useActor();
@@ -27,16 +37,18 @@ export function useGetCallerUserProfile() {
   };
 }
 
-export function useGetUserProfile(principalStr: string | null) {
-  const { actor, isFetching } = useActor();
+export function useGetUserProfile(principalStr?: string) {
+  const { actor, isFetching: actorFetching } = useActor();
 
   return useQuery<UserProfile | null>({
     queryKey: ['userProfile', principalStr],
     queryFn: async () => {
       if (!actor || !principalStr) return null;
-      return actor.getUserProfile(Principal.fromText(principalStr));
+      const principal = Principal.fromText(principalStr);
+      return actor.getUserProfile(principal);
     },
-    enabled: !!actor && !isFetching && !!principalStr,
+    enabled: !!actor && !actorFetching && !!principalStr,
+    retry: false,
   });
 }
 
@@ -55,10 +67,10 @@ export function useSaveCallerUserProfile() {
   });
 }
 
-// ── Tasks ─────────────────────────────────────────────────────────────────
+// ── Task Hooks ────────────────────────────────────────────────────────────────
 
 export function useGetTasksForCaller() {
-  const { actor, isFetching } = useActor();
+  const { actor, isFetching: actorFetching } = useActor();
 
   return useQuery<TaskResponse[]>({
     queryKey: ['tasksForCaller'],
@@ -66,12 +78,12 @@ export function useGetTasksForCaller() {
       if (!actor) return [];
       return actor.getTasksForCaller();
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !actorFetching,
   });
 }
 
 export function useGetAllTasks() {
-  const { actor, isFetching } = useActor();
+  const { actor, isFetching: actorFetching } = useActor();
 
   return useQuery<TaskResponse[]>({
     queryKey: ['allTasks'],
@@ -79,7 +91,21 @@ export function useGetAllTasks() {
       if (!actor) return [];
       return actor.getAllTasks();
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !actorFetching,
+  });
+}
+
+export function useGetTasksForUser(principalStr?: string) {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<TaskResponse[]>({
+    queryKey: ['tasksForUser', principalStr],
+    queryFn: async () => {
+      if (!actor || !principalStr) return [];
+      const principal = Principal.fromText(principalStr);
+      return actor.getTasksForUser(principal);
+    },
+    enabled: !!actor && !actorFetching && !!principalStr,
   });
 }
 
@@ -114,6 +140,11 @@ export function useCreateTask() {
   });
 }
 
+/**
+ * Upload proof for a task.
+ * Only the assigned employee can call this.
+ * The backend's uploadProof method accepts (taskId, file) only.
+ */
 export function useUploadProof() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
@@ -122,20 +153,62 @@ export function useUploadProof() {
     mutationFn: async (params: {
       taskId: bigint;
       file: ExternalBlob;
-      submittedByName: string;
-      submittedByEmail: string;
     }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.uploadProofFile(
-        params.taskId,
-        params.file,
-        params.submittedByName,
-        params.submittedByEmail,
-      );
+      return actor.uploadProof(params.taskId, params.file);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasksForCaller'] });
       queryClient.invalidateQueries({ queryKey: ['allTasks'] });
+      queryClient.invalidateQueries({ queryKey: ['adminDashboard'] });
+    },
+  });
+}
+
+/**
+ * Mark a task as complete (employee's final confirmation after proof upload).
+ * Only the assigned employee can call this.
+ * The task must already have a proofFile uploaded.
+ */
+export function useMarkComplete() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (taskId: bigint) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.markComplete(taskId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasksForCaller'] });
+      queryClient.invalidateQueries({ queryKey: ['allTasks'] });
+      queryClient.invalidateQueries({ queryKey: ['adminDashboard'] });
+    },
+  });
+}
+
+/**
+ * Admin review of a task: approve or reject.
+ * Only admins can call this.
+ * Rejection requires a non-empty reviewComment.
+ */
+export function useAdminReviewTask() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: {
+      taskId: bigint;
+      decision: FinalStatus;
+      reviewComment: string | null;
+    }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.adminReviewTask(params.taskId, params.decision, params.reviewComment);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['allTasks'] });
+      queryClient.invalidateQueries({ queryKey: ['tasksForCaller'] });
+      queryClient.invalidateQueries({ queryKey: ['tasksForUser'] });
       queryClient.invalidateQueries({ queryKey: ['adminDashboard'] });
     },
   });
@@ -175,48 +248,70 @@ export function useRejectTask() {
   });
 }
 
-// ── Admin Dashboard ───────────────────────────────────────────────────────
+// ── Admin Dashboard Hooks ─────────────────────────────────────────────────────
 
 export function useGetAdminDashboard() {
-  const { actor, isFetching } = useActor();
+  const { actor, isFetching: actorFetching } = useActor();
 
-  return useQuery({
+  return useQuery<{
+    totalTasks: bigint;
+    completedTasks: bigint;
+    leaderboard: Array<[Principal, bigint]>;
+    lateTasks: bigint;
+  }>({
     queryKey: ['adminDashboard'],
     queryFn: async () => {
-      if (!actor) return null;
+      if (!actor) throw new Error('Actor not available');
       return actor.getAdminDashboard();
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !actorFetching,
   });
 }
 
 export function useGetAllUsersStats() {
-  const { actor, isFetching } = useActor();
+  const { actor, isFetching: actorFetching } = useActor();
 
-  return useQuery({
+  return useQuery<UserStats[]>({
     queryKey: ['allUsersStats'],
     queryFn: async () => {
       if (!actor) return [];
       return actor.getAllUsersStats();
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !actorFetching,
   });
 }
 
 export function useGetActiveUsers() {
-  const { actor, isFetching } = useActor();
+  const { actor, isFetching: actorFetching } = useActor();
 
-  return useQuery({
+  return useQuery<UserSummary[]>({
     queryKey: ['activeUsers'],
     queryFn: async () => {
       if (!actor) return [];
       return actor.getActiveUsers();
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !actorFetching,
   });
 }
 
-// ── Admin User Management ─────────────────────────────────────────────────
+// ── Admin User Management Hooks ───────────────────────────────────────────────
+
+export function useDeleteUser() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (userPrincipalStr: string) => {
+      if (!actor) throw new Error('Actor not available');
+      const principal = Principal.fromText(userPrincipalStr);
+      return actor.deleteUser(principal);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['allUsersStats'] });
+      queryClient.invalidateQueries({ queryKey: ['activeUsers'] });
+    },
+  });
+}
 
 export function useUpdateUserRole() {
   const { actor } = useActor();
@@ -225,7 +320,8 @@ export function useUpdateUserRole() {
   return useMutation({
     mutationFn: async (params: { user: string; newRole: UserRole }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.updateUserRole(Principal.fromText(params.user), params.newRole);
+      const principal = Principal.fromText(params.user);
+      return actor.updateUserRole(principal, params.newRole);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['allUsersStats'] });
@@ -240,28 +336,15 @@ export function useToggleUserAccountStatus() {
   return useMutation({
     mutationFn: async (params: { user: string; status: AccountStatus }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.toggleUserAccountStatus(Principal.fromText(params.user), params.status);
+      const principal = Principal.fromText(params.user);
+      return actor.toggleUserAccountStatus(principal, params.status);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['allUsersStats'] });
+      queryClient.invalidateQueries({ queryKey: ['activeUsers'] });
     },
   });
 }
 
-export function useDeleteUser() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (user: string) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.deleteUser(Principal.fromText(user));
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['allUsersStats'] });
-    },
-  });
-}
-
-// Re-export identity hook for convenience
-export { useInternetIdentity };
+// Re-export types for convenience
+export type { TaskResponse, UserProfile, UserStats, UserSummary, ApprovalStatus };

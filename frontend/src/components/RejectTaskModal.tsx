@@ -5,64 +5,90 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { useRejectTask } from '../hooks/useQueries';
-import { toast } from 'sonner';
 
 interface RejectTaskModalProps {
-  taskId: bigint;
   open: boolean;
-  onClose: () => void;
+  onOpenChange: (open: boolean) => void;
+  onReject: (comment: string) => void;
+  isLoading?: boolean;
 }
 
-export default function RejectTaskModal({ taskId, open, onClose }: RejectTaskModalProps) {
-  const [reason, setReason] = useState('');
-  const rejectTask = useRejectTask();
+export default function RejectTaskModal({
+  open,
+  onOpenChange,
+  onReject,
+  isLoading = false,
+}: RejectTaskModalProps) {
+  const [comment, setComment] = useState('');
+  const [error, setError] = useState('');
 
-  const handleSubmit = async () => {
-    if (!reason.trim()) return;
-    try {
-      await rejectTask.mutateAsync({ taskId, reason: reason.trim() });
-      toast.success('Task rejected.');
-      setReason('');
-      onClose();
-    } catch (err: any) {
-      toast.error(err?.message || 'Failed to reject task.');
+  const handleSubmit = () => {
+    if (!comment.trim()) {
+      setError('A review comment is required when marking a task as incomplete.');
+      return;
     }
+    setError('');
+    onReject(comment.trim());
+    setComment('');
+  };
+
+  const handleOpenChange = (val: boolean) => {
+    if (!val) {
+      setComment('');
+      setError('');
+    }
+    onOpenChange(val);
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-md">
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Reject Task</DialogTitle>
+          <DialogTitle>Mark Task as Incomplete</DialogTitle>
+          <DialogDescription>
+            Please provide a review comment explaining why this task is incomplete. The employee will see this comment.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-2">
-          <Label htmlFor="reason">Rejection Reason *</Label>
+          <Label htmlFor="review-comment">
+            Review Comment <span className="text-red-500">*</span>
+          </Label>
           <Textarea
-            id="reason"
-            placeholder="Enter the reason for rejection..."
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
+            id="review-comment"
+            placeholder="Explain what needs to be corrected or resubmitted…"
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
             rows={4}
+            disabled={isLoading}
           />
-          {!reason.trim() && reason.length > 0 && (
-            <p className="text-xs text-red-500">Reason cannot be empty.</p>
-          )}
+          {error && <p className="text-xs text-red-500">{error}</p>}
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={rejectTask.isPending}>
+          <Button
+            variant="outline"
+            onClick={() => handleOpenChange(false)}
+            disabled={isLoading}
+          >
             Cancel
           </Button>
           <Button
             variant="destructive"
             onClick={handleSubmit}
-            disabled={!reason.trim() || rejectTask.isPending}
+            disabled={isLoading || !comment.trim()}
           >
-            {rejectTask.isPending ? 'Rejecting...' : 'Reject Task'}
+            {isLoading ? (
+              <span className="flex items-center gap-2">
+                <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+                Submitting…
+              </span>
+            ) : (
+              'Mark Incomplete'
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

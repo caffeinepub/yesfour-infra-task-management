@@ -22,10 +22,14 @@ export interface TaskResponse {
     assignedTo: Principal;
     completionTime?: Time;
     submissionTimestamp?: Time;
+    finalStatus?: FinalStatus;
     rejectionReason?: string;
+    submittedAt?: Time;
     description: string;
     performancePoints: bigint;
+    reviewComment?: string;
     deadline: Time;
+    reviewedAt?: Time;
     approvalStatus: ApprovalStatus;
     taskId: bigint;
     proofSubmittedBy?: string;
@@ -70,6 +74,11 @@ export enum Department {
     travelDesk = "travelDesk",
     apartments = "apartments"
 }
+export enum FinalStatus {
+    pendingReview = "pendingReview",
+    approved = "approved",
+    rejected = "rejected"
+}
 export enum TaskPriority {
     low = "low",
     high = "high",
@@ -92,6 +101,12 @@ export enum UserRole__1 {
     guest = "guest"
 }
 export interface backendInterface {
+    /**
+     * / Admin review of a task: approve or reject.
+     * / Only admins may call this function.
+     * / Rejection requires a non-empty reviewComment.
+     */
+    adminReviewTask(taskId: bigint, decision: FinalStatus, reviewComment: string | null): Promise<TaskResponse>;
     /**
      * / Approve a task. Accessible by admins and managers only.
      */
@@ -140,6 +155,13 @@ export interface backendInterface {
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
     /**
+     * / Mark a task as complete (employee's final confirmation after proof upload).
+     * / Only the assigned employee (caller == assignedTo) may call this.
+     * / The caller must also be a registered user (#user permission).
+     * / The task must already have a proofFile uploaded.
+     */
+    markComplete(taskId: bigint): Promise<TaskResponse>;
+    /**
      * / Reject a task. Accessible by admins and managers only.
      */
     rejectTask(taskId: bigint, reason: string): Promise<void>;
@@ -147,7 +169,9 @@ export interface backendInterface {
     toggleUserAccountStatus(user: Principal, status: AccountStatus): Promise<void>;
     updateUserRole(user: Principal, newRole: UserRole): Promise<void>;
     /**
-     * / Upload proof for a task. Only the assigned employee can upload proof.
+     * / Upload proof for a task.
+     * / Only the assigned employee (caller == assignedTo) may call this.
+     * / The caller must also be a registered user (#user permission).
      */
-    uploadProofFile(taskId: bigint, file: ExternalBlob, submittedByName: string, submittedByEmail: string): Promise<void>;
+    uploadProof(taskId: bigint, file: ExternalBlob): Promise<TaskResponse>;
 }

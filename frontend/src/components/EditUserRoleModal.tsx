@@ -1,8 +1,4 @@
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { Principal } from '@dfinity/principal';
-import { UserRole } from '../backend';
-import { useUpdateUserRole } from '../hooks/useQueries';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -20,67 +16,59 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
+import { UserRole } from '../backend';
+import { useUpdateUserRole } from '../hooks/useQueries';
+import { toast } from 'sonner';
+import { Principal } from '@dfinity/principal';
 
 interface EditUserRoleModalProps {
   open: boolean;
-  onClose: () => void;
-  userPrincipal: Principal | null;
-  userName: string;
+  onOpenChange: (open: boolean) => void;
+  userPrincipal: Principal;
   currentRole: UserRole;
+  userName: string;
 }
-
-const roleLabels: Record<UserRole, string> = {
-  [UserRole.admin]: 'Admin',
-  [UserRole.manager]: 'Manager',
-  [UserRole.employee]: 'Employee',
-};
 
 export default function EditUserRoleModal({
   open,
-  onClose,
+  onOpenChange,
   userPrincipal,
-  userName,
   currentRole,
+  userName,
 }: EditUserRoleModalProps) {
   const [selectedRole, setSelectedRole] = useState<UserRole>(currentRole);
-  const updateRole = useUpdateUserRole();
+  const updateUserRole = useUpdateUserRole();
 
   const handleSave = async () => {
-    if (!userPrincipal) return;
     try {
-      await updateRole.mutateAsync({ user: userPrincipal.toString(), newRole: selectedRole });
-      toast.success(`Role updated to ${roleLabels[selectedRole]} for ${userName}`);
-      onClose();
+      await updateUserRole.mutateAsync({
+        user: userPrincipal.toString(),
+        newRole: selectedRole,
+      });
+      toast.success(`Role updated for ${userName}`);
+      onOpenChange(false);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to update role';
-      toast.error(message);
+      const message = err instanceof Error ? err.message : 'Update failed';
+      toast.error(`Failed to update role: ${message}`);
     }
   };
 
-  const handleOpenChange = (isOpen: boolean) => {
-    if (!isOpen) onClose();
-  };
-
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>Edit User Role</DialogTitle>
           <DialogDescription>
-            Change the role for <span className="font-semibold text-foreground">{userName}</span>.
+            Change the role for <strong>{userName}</strong>.
           </DialogDescription>
         </DialogHeader>
-
-        <div className="py-4 space-y-3">
-          <Label htmlFor="role-select" className="text-sm font-medium">
-            Select New Role
-          </Label>
+        <div className="space-y-3 py-2">
+          <Label>Role</Label>
           <Select
             value={selectedRole}
             onValueChange={(val) => setSelectedRole(val as UserRole)}
           >
-            <SelectTrigger id="role-select" className="w-full">
+            <SelectTrigger>
               <SelectValue placeholder="Select role" />
             </SelectTrigger>
             <SelectContent>
@@ -90,18 +78,12 @@ export default function EditUserRoleModal({
             </SelectContent>
           </Select>
         </div>
-
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={onClose} disabled={updateRole.isPending}>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={updateUserRole.isPending}>
             Cancel
           </Button>
-          <Button
-            onClick={handleSave}
-            disabled={updateRole.isPending || selectedRole === currentRole}
-            className="bg-brand-green hover:bg-brand-green-dark text-white"
-          >
-            {updateRole.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Save Changes
+          <Button onClick={handleSave} disabled={updateUserRole.isPending}>
+            {updateUserRole.isPending ? 'Saving…' : 'Save Changes'}
           </Button>
         </DialogFooter>
       </DialogContent>

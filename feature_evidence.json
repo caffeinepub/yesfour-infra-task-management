@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-on-the-employee-dashboard-employeedashboard-tsx-proofuploadbutton-tsx-ensure-that-1-each-employee-can-only-see-their-own-uploaded-proof-file-rendered-inline-or-as-a-link-within-their-own-task-card-2-proof-files-belonging-to-other-employees-are-never-fetched-or-displayed-3-after-upload-a-pending-review-label-or-badge-appears-on-the-task-card-to-communicate-status-to-the-employee",
-      "featureTitle": "On the Employee Dashboard (EmployeeDashboard.tsx / ProofUploadButton.tsx), ensure that: (1) each employee can only see their own uploaded proof file (rendered inline or as a link) within their own task card; (2) proof files belonging to other employees are never fetched or displayed; (3) after upload, a 'Pending Review' label or badge appears on the task card to communicate status to the employee.",
+      "featureId": "feature-on-the-employee-dashboard-employeedashboard-tsx-and-proofuploadbutton-tsx-add-a-proof-upload-button-and-a-mark-as-completed-button-to-each-task-card-where-the-task-status-is-yellow-in-progress-or-rejected-the-mark-as-completed-button-must-only-be-enabled-after-a-proof-file-has-been-selected-and-uploaded-after-successful-submission-the-task-card-must-immediately-reflect-the-pending-review-status-badge-blue-the-employee-must-also-be-able-to-view-their-own-previously-uploaded-proof-file-displayed-as-an-inline-link-or-thumbnail-within-their-task-card-no-changes-to-the-existing-design-theme-spacing-or-layout-are-permitted-beyond-adding-these-controls",
+      "featureTitle": "On the Employee Dashboard (EmployeeDashboard.tsx and ProofUploadButton.tsx), add a proof upload button and a 'Mark as Completed' button to each task card where the task status is Yellow (In Progress) or Rejected. The 'Mark as Completed' button must only be enabled after a proof file has been selected and uploaded. After successful submission the task card must immediately reflect the 'Pending Review' status badge (Blue). The employee must also be able to view their own previously uploaded proof file displayed as an inline link or thumbnail within their task card. No changes to the existing design theme, spacing, or layout are permitted beyond adding these controls.",
       "files": [
-        "frontend/src/components/StatusBadge.tsx",
+        "frontend/src/components/ProofUploadButton.tsx",
         "frontend/src/components/TaskCard.tsx",
         "frontend/src/pages/EmployeeDashboard.tsx"
       ],
@@ -19,40 +19,16 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-25"
+        "REQ-37"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-in-the-admin-dashboard-all-tasks-view-admindashboard-tsx-globaltasklist-tsx-taskcard-tsx-add-admin-only-visible-fields-to-each-task-entry-a-blue-proof-uploaded-badge-shown-when-prooffile-exists-a-view-proof-button-that-fetches-and-opens-the-proof-image-preview-or-pdf-in-a-modal-or-new-tab-a-download-proof-option-the-submission-timestamp-formatted-as-a-human-readable-date-time-string-and-the-submitted-by-field-showing-employee-name-and-email-these-fields-must-be-completely-hidden-for-manager-and-employee-roles",
-      "featureTitle": "In the Admin Dashboard → All Tasks view (AdminDashboard.tsx / GlobalTaskList.tsx / TaskCard.tsx), add Admin-only visible fields to each task entry: a blue 'Proof Uploaded' badge (shown when proofFile exists), a 'View Proof' button that fetches and opens the proof (image preview or PDF) in a modal or new tab, a 'Download Proof' option, the Submission Timestamp formatted as a human-readable date/time string, and the Submitted By field showing Employee Name and Email. These fields must be completely hidden for Manager and Employee roles.",
+      "featureId": "feature-on-the-admin-dashboard-admindashboard-tsx-globaltasklist-tsx-taskcard-tsx-add-an-admin-only-proof-review-panel-within-each-task-card-or-expanded-task-detail-that-has-a-prooffile-present-the-panel-must-display-employee-name-submission-date-time-formatted-as-human-readable-string-an-uploaded-proof-preview-image-thumbnail-or-pdf-icon-with-filename-an-approve-button-calls-adminreviewtask-with-approved-and-a-mark-incomplete-button-that-opens-a-modal-requiring-a-non-empty-review-comment-before-submission-calls-adminreviewtask-with-rejected-and-the-comment-after-admin-action-the-task-card-must-immediately-reflect-the-updated-status-badge-green-for-approved-yellow-in-progress-for-rejected-these-admin-controls-must-be-completely-hidden-for-manager-and-employee-roles",
+      "featureTitle": "On the Admin Dashboard (AdminDashboard.tsx, GlobalTaskList.tsx, TaskCard.tsx), add an Admin-only Proof Review Panel within each task card or expanded task detail that has a proofFile present. The panel must display: Employee Name, Submission Date & Time (formatted as human-readable string), an uploaded proof preview (image thumbnail or PDF icon with filename), an 'Approve' button (calls adminReviewTask with #approved), and a 'Mark Incomplete' button that opens a modal requiring a non-empty review comment before submission (calls adminReviewTask with #rejected and the comment). After admin action, the task card must immediately reflect the updated status badge (Green for Approved, Yellow/In Progress for Rejected). These admin controls must be completely hidden for Manager and Employee roles.",
       "files": [
-        "frontend/src/components/GlobalTaskList.tsx",
-        "frontend/src/components/ProofPreviewModal.tsx",
-        "frontend/src/components/TaskCard.tsx",
-        "frontend/src/pages/AdminDashboard.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-26"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-add-an-admin-only-proof-review-panel-section-inside-the-admin-task-detail-expanded-view-in-the-admin-dashboard-the-panel-must-display-employee-name-an-uploaded-file-preview-image-thumbnail-or-pdf-icon-with-filename-uploaded-date-time-an-approve-button-calls-the-existing-approve-mutation-and-a-reject-button-that-opens-a-modal-requiring-a-rejection-reason-text-input-before-submission-add-three-status-indicator-badges-used-throughout-the-admin-view-a-blue-badge-labelled-proof-uploaded-a-green-badge-labelled-approved-and-a-red-badge-labelled-rejected-reflecting-the-current-approvalstatus-of-the-task",
-      "featureTitle": "Add an Admin-only Proof Review Panel section inside the Admin Task detail/expanded view in the Admin Dashboard. The panel must display: Employee Name, an uploaded file preview (image thumbnail or PDF icon with filename), Uploaded Date & Time, an Approve button (calls the existing approve mutation), and a Reject button that opens a modal requiring a rejection reason text input before submission. Add three status indicator badges used throughout the Admin view: a blue badge labelled 'Proof Uploaded', a green badge labelled 'Approved', and a red badge labelled 'Rejected', reflecting the current approvalStatus of the task.",
-      "files": [
-        "frontend/src/components/GlobalTaskList.tsx",
         "frontend/src/components/ProofReviewPanel.tsx",
-        "frontend/src/components/StatusBadge.tsx",
+        "frontend/src/components/RejectTaskModal.tsx",
         "frontend/src/components/TaskCard.tsx"
       ],
       "components": [
@@ -65,16 +41,14 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-27"
+        "REQ-38"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-update-the-usequeries-ts-hooks-and-any-relevant-react-query-fetch-logic-to-ensure-1-proof-related-fields-prooffile-url-submittedbyname-submittedbyemail-submissiontimestamp-are-only-requested-and-stored-client-side-when-the-authenticated-user-is-admin-or-the-task-s-own-assignee-2-a-getprooffortask-taskid-query-hook-is-added-that-calls-the-protected-backend-query-and-is-only-invoked-from-admin-role-views-or-the-employee-s-own-task-view",
-      "featureTitle": "Update the useQueries.ts hooks and any relevant React Query fetch logic to ensure: (1) proof-related fields (proofFile URL, submittedByName, submittedByEmail, submissionTimestamp) are only requested and stored client-side when the authenticated user is Admin or the task's own assignee; (2) a getProofForTask(taskId) query hook is added that calls the protected backend query and is only invoked from Admin-role views or the employee's own task view.",
+      "featureId": "feature-update-the-react-query-hooks-in-usequeries-ts-to-add-1-an-uploadproof-mutation-hook-that-calls-the-backend-uploadproof-mutation-with-taskid-and-file-data-2-a-markcomplete-mutation-hook-that-calls-the-backend-markcomplete-mutation-with-taskid-3-an-adminreviewtask-mutation-hook-that-calls-the-backend-adminreviewtask-mutation-with-taskid-decision-and-optional-reviewcomment-all-three-hooks-must-invalidate-the-relevant-task-list-queries-on-success-proof-related-fields-in-task-query-responses-must-only-be-stored-and-consumed-client-side-when-the-authenticated-user-is-admin-or-the-task-s-own-assignee",
+      "featureTitle": "Update the React Query hooks in useQueries.ts to add: (1) an uploadProof mutation hook that calls the backend uploadProof mutation with taskId and file data; (2) a markComplete mutation hook that calls the backend markComplete mutation with taskId; (3) an adminReviewTask mutation hook that calls the backend adminReviewTask mutation with taskId, decision, and optional reviewComment. All three hooks must invalidate the relevant task list queries on success. Proof-related fields in task query responses must only be stored and consumed client-side when the authenticated user is Admin or the task's own assignee.",
       "files": [
-        "frontend/src/components/ProofReviewPanel.tsx",
-        "frontend/src/components/TaskCard.tsx",
         "frontend/src/hooks/useQueries.ts"
       ],
       "components": [
@@ -87,7 +61,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-28"
+        "REQ-39"
       ],
       "confidence": "high"
     }

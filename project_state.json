@@ -1,15 +1,18 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 9,
-  "summary": "Full-stack internal task management web app for Yesfour Infra (real estate & construction). React + Node.js/Express + MongoDB + JWT auth. Strict productivity workflow: Assign → Work → Upload Proof → Approve. Three roles: Admin, Manager, Employee. Status color system (Red/Yellow/Blue/Green), performance points, department filtering, file uploads via Multer, real-time task status notifications via Socket.io (no chat).",
+  "projectStateVersion": 13,
+  "summary": "Full-stack internal task management web app for Yesfour Infra (real estate & construction). React + Node.js/Express + MongoDB + JWT auth. Strict productivity workflow: Assign → In Progress → Upload Proof → Mark Completed → Pending Review → Admin Review → Approved/Rejected/Overdue. Three roles: Admin, Manager, Employee. Status system: In Progress (Yellow), Pending Review (Blue), Approved (Green), Rejected (Red), Overdue. Performance points, department filtering, file uploads via Multer, real-time task status notifications via Socket.io (no chat).",
   "architectural_notes": [
     "Tech stack: React frontend, Node.js/Express backend, MongoDB database, JWT auth, Multer file storage, Socket.io for real-time notifications",
     "UI theme: white + green corporate minimal design; status colors Red/Yellow/Blue/Green must be clearly visible",
     "Departments: Construction, Marketing, Travel Desk, Accounts, Apartments",
     "No chat, no email integration, no discussion features — strictly task workflow only",
-    "Proof files stored in a protected server folder; access via signed temporary URLs (5-min expiry) for Admin; employees can only access their own proof via JWT-verified route"
+    "Proof files stored in a protected server folder; access via signed temporary URLs (5-min expiry) for Admin; employees can only access their own proof via JWT-verified route",
+    "Updated status flow: In Progress (Yellow) → Pending Review (Blue) → Approved (Green) / Rejected (Red); Overdue if deadline crossed"
   ],
-  "known_issues": [],
+  "known_issues": [
+    "Build has failed multiple times for the proof upload + admin review workflow — simplify scope per attempt"
+  ],
   "isFixRequest": false,
   "existing_features": [
     {
@@ -153,6 +156,46 @@
       "title": "Update the useQueries.ts hooks and any relevant React Query fetch logic to ensure: (1) proof-related fields (proofFile URL, submittedByName, submittedByEmail, submissionTimestamp) are only requested and stored client-side when the authenticated user is Admin or the task's own assignee; (2) a getProofForTask(taskId) query hook is added that calls the protected backend query and is only invoked from Admin-role views or the employee's own task view.",
       "reqIds": [
         "REQ-28"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-audit-and-fix-all-typescript-compilation-errors-and-react-runtime-errors-in-the-frontend-introduced-in-version-4-including-type-mismatches-in-usequeries-ts-proofreviewpanel-tsx-proofuploadbutton-tsx-taskcard-tsx-globaltasklist-tsx-admindashboard-tsx-and-employeedashboard-tsx-resolve-any-undefined-variable-references-missing-props-broken-imports-or-incorrect-type-assertions",
+      "title": "Audit and fix all TypeScript compilation errors and React runtime errors in the frontend introduced in Version 4, including type mismatches in useQueries.ts, ProofReviewPanel.tsx, ProofUploadButton.tsx, TaskCard.tsx, GlobalTaskList.tsx, AdminDashboard.tsx, and EmployeeDashboard.tsx. Resolve any undefined variable references, missing props, broken imports, or incorrect type assertions.",
+      "reqIds": [
+        "REQ-30"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-verify-end-to-end-integration-between-the-fixed-backend-and-frontend-the-proof-upload-flow-employee-uploads-status-turns-blue-approvalstatus-becomes-pendingreview-the-admin-proof-review-panel-view-proof-approve-reject-and-role-based-field-visibility-proof-metadata-hidden-from-manager-employee-visible-to-admin-and-task-assignee-must-all-function-correctly-after-the-fixes",
+      "title": "Verify end-to-end integration between the fixed backend and frontend: the proof upload flow (Employee uploads → status turns Blue → approvalStatus becomes pendingReview), the Admin proof review panel (View Proof, Approve, Reject), and role-based field visibility (proof metadata hidden from Manager/Employee, visible to Admin and task assignee) must all function correctly after the fixes.",
+      "reqIds": [
+        "REQ-31"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-on-the-employee-dashboard-employeedashboard-tsx-and-proofuploadbutton-tsx-add-a-proof-upload-button-and-a-mark-as-completed-button-to-each-task-card-where-the-task-status-is-yellow-in-progress-or-rejected-the-mark-as-completed-button-must-only-be-enabled-after-a-proof-file-has-been-selected-and-uploaded-after-successful-submission-the-task-card-must-immediately-reflect-the-pending-review-status-badge-blue-the-employee-must-also-be-able-to-view-their-own-previously-uploaded-proof-file-displayed-as-an-inline-link-or-thumbnail-within-their-task-card-no-changes-to-the-existing-design-theme-spacing-or-layout-are-permitted-beyond-adding-these-controls",
+      "title": "On the Employee Dashboard (EmployeeDashboard.tsx and ProofUploadButton.tsx), add a proof upload button and a 'Mark as Completed' button to each task card where the task status is Yellow (In Progress) or Rejected. The 'Mark as Completed' button must only be enabled after a proof file has been selected and uploaded. After successful submission the task card must immediately reflect the 'Pending Review' status badge (Blue). The employee must also be able to view their own previously uploaded proof file displayed as an inline link or thumbnail within their task card. No changes to the existing design theme, spacing, or layout are permitted beyond adding these controls.",
+      "reqIds": [
+        "REQ-37"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-on-the-admin-dashboard-admindashboard-tsx-globaltasklist-tsx-taskcard-tsx-add-an-admin-only-proof-review-panel-within-each-task-card-or-expanded-task-detail-that-has-a-prooffile-present-the-panel-must-display-employee-name-submission-date-time-formatted-as-human-readable-string-an-uploaded-proof-preview-image-thumbnail-or-pdf-icon-with-filename-an-approve-button-calls-adminreviewtask-with-approved-and-a-mark-incomplete-button-that-opens-a-modal-requiring-a-non-empty-review-comment-before-submission-calls-adminreviewtask-with-rejected-and-the-comment-after-admin-action-the-task-card-must-immediately-reflect-the-updated-status-badge-green-for-approved-yellow-in-progress-for-rejected-these-admin-controls-must-be-completely-hidden-for-manager-and-employee-roles",
+      "title": "On the Admin Dashboard (AdminDashboard.tsx, GlobalTaskList.tsx, TaskCard.tsx), add an Admin-only Proof Review Panel within each task card or expanded task detail that has a proofFile present. The panel must display: Employee Name, Submission Date & Time (formatted as human-readable string), an uploaded proof preview (image thumbnail or PDF icon with filename), an 'Approve' button (calls adminReviewTask with #approved), and a 'Mark Incomplete' button that opens a modal requiring a non-empty review comment before submission (calls adminReviewTask with #rejected and the comment). After admin action, the task card must immediately reflect the updated status badge (Green for Approved, Yellow/In Progress for Rejected). These admin controls must be completely hidden for Manager and Employee roles.",
+      "reqIds": [
+        "REQ-38"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-react-query-hooks-in-usequeries-ts-to-add-1-an-uploadproof-mutation-hook-that-calls-the-backend-uploadproof-mutation-with-taskid-and-file-data-2-a-markcomplete-mutation-hook-that-calls-the-backend-markcomplete-mutation-with-taskid-3-an-adminreviewtask-mutation-hook-that-calls-the-backend-adminreviewtask-mutation-with-taskid-decision-and-optional-reviewcomment-all-three-hooks-must-invalidate-the-relevant-task-list-queries-on-success-proof-related-fields-in-task-query-responses-must-only-be-stored-and-consumed-client-side-when-the-authenticated-user-is-admin-or-the-task-s-own-assignee",
+      "title": "Update the React Query hooks in useQueries.ts to add: (1) an uploadProof mutation hook that calls the backend uploadProof mutation with taskId and file data; (2) a markComplete mutation hook that calls the backend markComplete mutation with taskId; (3) an adminReviewTask mutation hook that calls the backend adminReviewTask mutation with taskId, decision, and optional reviewComment. All three hooks must invalidate the relevant task list queries on success. Proof-related fields in task query responses must only be stored and consumed client-side when the authenticated user is Admin or the task's own assignee.",
+      "reqIds": [
+        "REQ-39"
       ],
       "version": 1
     }
@@ -325,6 +368,72 @@
       "summary": "Extend the task data model in the Motoko backend to ensure that when an employee uploads proof, the task stores: proofFile (safe relative URL or blob key — never a full server path), submittedByName (employee full name), submittedByEmail (employee email), and submissionTimestamp (nanosecond timestamp). The task's approvalStatus must be set to #pendingReview upon proof upload, and status must transition to Blue (#blue) at that point.",
       "reqIds": [
         "REQ-24"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-27",
+      "summary": "Audit and fix all compilation or runtime errors in the Motoko backend (main.mo and migration.mo) introduced in Version 4, including type mismatches, missing variant cases, undefined identifiers, and any issues related to the newly added proof submission fields (proofFile, submittedByName, submittedByEmail, submissionTimestamp, approvalStatus #pendingReview). Ensure the actor compiles and deploys without errors.",
+      "reqIds": [
+        "REQ-29"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-28",
+      "summary": "Employee: Upload proof file (image/PDF), click 'Mark as Completed', status changes to 'Pending Review' on submission; employee can view own proof and status only",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-29",
+      "summary": "Admin: View all submitted proofs with employee name + submission time; Approve button (status → Approved), Mark Incomplete button (status → Rejected) with required review comment; admin-review route PUT /tasks/admin-review/:id",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-30",
+      "summary": "Update Task schema: add proofFile, submittedAt, reviewedAt, reviewComment, finalStatus (Pending Review / Approved / Rejected) fields. Add routes PUT /tasks/upload-proof/:id, PUT /tasks/mark-complete/:id, PUT /tasks/admin-review/:id with role-based access (assigned employee only for upload/mark-complete; Admin only for approve/reject; return 403 if unauthorized)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-31",
+      "summary": "Extend the Task data model in the Motoko backend actor to add the following optional fields: proofFile (Text — safe relative URL or blob key), submittedAt (Int — nanosecond timestamp), reviewedAt (Int — nanosecond timestamp), reviewComment (Text), and finalStatus (variant: #pendingReview | #approved | #rejected). These fields must be stored on each task record and initialised as null/empty on task creation.",
+      "reqIds": [
+        "REQ-32"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-32",
+      "summary": "Add an uploadProof mutation in the Motoko backend actor. It accepts a taskId and a proof file reference (base64 string or safe URL key). It must: (1) verify the caller is the assignedTo principal of that task, returning an #unauthorized error otherwise; (2) store the proofFile value, set submittedAt to the current time, set the task's approvalStatus to #pendingReview, and set the task status to #blue (Pending Review); (3) return the updated task on success.",
+      "reqIds": [
+        "REQ-33"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-33",
+      "summary": "Add a markComplete mutation in the Motoko backend actor. It accepts a taskId. It must: (1) verify the caller is the assignedTo principal of that task and that the task already has a proofFile uploaded, returning appropriate errors otherwise; (2) confirm the submission by recording submittedAt if not already set; (3) ensure the task's approvalStatus is #pendingReview and status is #blue. This mutation represents the employee's final confirmation after proof upload.",
+      "reqIds": [
+        "REQ-34"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-34",
+      "summary": "Add an adminReviewTask mutation in the Motoko backend actor. It accepts taskId, decision (#approved | #rejected), and an optional reviewComment (Text). It must: (1) verify the caller has the Admin role, returning #unauthorized otherwise; (2) if decision is #approved: set finalStatus = #approved, approvalStatus = #approved, task status = #green, reviewedAt = now, award performance points to the assignee (+10 if deadline not passed, -5 if overdue); (3) if decision is #rejected: require a non-empty reviewComment (return error if missing), set finalStatus = #rejected, approvalStatus = #rejected, task status = #yellow (back to In Progress), reviewedAt = now, store reviewComment.",
+      "reqIds": [
+        "REQ-35"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-35",
+      "summary": "Update the task query responses in the Motoko backend actor so that proof-related fields (proofFile, submittedAt, reviewedAt, reviewComment, finalStatus) are only included in the returned task record when the caller is an Admin or is the assignedTo principal of that specific task. For all other callers these fields must be omitted or returned as null.",
+      "reqIds": [
+        "REQ-36"
       ],
       "status": "pending"
     }

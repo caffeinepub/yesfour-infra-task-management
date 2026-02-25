@@ -1,55 +1,77 @@
 import React, { useState } from 'react';
-import { TaskResponse } from '../backend';
-import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle } from 'lucide-react';
-import { useApproveTask } from '../hooks/useQueries';
-import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { useApproveTask, useRejectTask } from '../hooks/useQueries';
 import RejectTaskModal from './RejectTaskModal';
+import { toast } from 'sonner';
 
 interface TaskApprovalActionsProps {
-  task: TaskResponse;
+  taskId: bigint;
 }
 
-export default function TaskApprovalActions({ task }: TaskApprovalActionsProps) {
-  const [showRejectModal, setShowRejectModal] = useState(false);
+export default function TaskApprovalActions({ taskId }: TaskApprovalActionsProps) {
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const approveTask = useApproveTask();
+  const rejectTask = useRejectTask();
 
   const handleApprove = async () => {
     try {
-      await approveTask.mutateAsync(task.taskId);
-      toast.success('Task approved!');
-    } catch (err: any) {
-      toast.error(err?.message || 'Failed to approve task.');
+      await approveTask.mutateAsync(taskId);
+      toast.success('Task approved successfully!');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Approval failed';
+      toast.error(`Approval failed: ${message}`);
+    }
+  };
+
+  const handleReject = async (reason: string) => {
+    try {
+      await rejectTask.mutateAsync({ taskId, reason });
+      toast.success('Task rejected.');
+      setRejectModalOpen(false);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Rejection failed';
+      toast.error(`Rejection failed: ${message}`);
     }
   };
 
   return (
     <>
-      <div className="flex gap-2">
+      <div className="flex items-center gap-2">
         <Button
           size="sm"
+          className="bg-task-green hover:bg-task-green/90 text-white"
           onClick={handleApprove}
           disabled={approveTask.isPending}
-          className="gap-1.5 bg-brand-green hover:bg-brand-green-dark text-white flex-1"
         >
-          <CheckCircle className="w-3.5 h-3.5" />
-          {approveTask.isPending ? 'Approving...' : 'Approve'}
+          {approveTask.isPending ? (
+            <span className="flex items-center gap-1">
+              <span className="animate-spin w-3 h-3 border border-white border-t-transparent rounded-full" />
+              Approving…
+            </span>
+          ) : (
+            <>
+              <CheckCircle className="w-4 h-4 mr-1" />
+              Approve
+            </>
+          )}
         </Button>
         <Button
-          size="sm"
           variant="destructive"
-          onClick={() => setShowRejectModal(true)}
-          className="gap-1.5 flex-1"
+          size="sm"
+          onClick={() => setRejectModalOpen(true)}
+          disabled={rejectTask.isPending}
         >
-          <XCircle className="w-3.5 h-3.5" />
+          <XCircle className="w-4 h-4 mr-1" />
           Reject
         </Button>
       </div>
 
       <RejectTaskModal
-        taskId={task.taskId}
-        open={showRejectModal}
-        onClose={() => setShowRejectModal(false)}
+        open={rejectModalOpen}
+        onOpenChange={setRejectModalOpen}
+        onReject={handleReject}
+        isLoading={rejectTask.isPending}
       />
     </>
   );

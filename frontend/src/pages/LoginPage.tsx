@@ -1,27 +1,32 @@
 import { useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useAuth } from '../hooks/useAuth';
+import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, LogIn, Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
-  const { login, isAuthenticated, isLoggingIn, isInitializing, userProfile, profileLoading, isFetched } = useAuth();
+  const { login, isInitializing } = useInternetIdentity();
+  const { isAuthenticated, isLoggingIn, userProfile, profileLoading, profileFetched } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    if (profileLoading || !isFetched) return;
+    if (profileLoading || !profileFetched) return;
 
     if (userProfile === null || userProfile === undefined) {
       navigate({ to: '/profile-setup' });
     } else {
-      const role = userProfile.role;
+      const role =
+        typeof userProfile.role === 'string'
+          ? userProfile.role
+          : Object.keys(userProfile.role)[0];
       if (role === 'admin') navigate({ to: '/admin' });
       else if (role === 'manager') navigate({ to: '/manager' });
       else navigate({ to: '/employee' });
     }
-  }, [isAuthenticated, userProfile, profileLoading, isFetched, navigate]);
+  }, [isAuthenticated, userProfile, profileLoading, profileFetched, navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-brand-green-muted via-white to-white flex items-center justify-center p-4">

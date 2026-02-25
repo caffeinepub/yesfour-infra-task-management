@@ -1,216 +1,196 @@
 import React, { useState } from 'react';
-import { TaskResponse, ApprovalStatus } from '../backend';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Eye, Download, CheckCircle, XCircle, FileText, User, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, XCircle, Eye, Download, FileText, User, Clock } from 'lucide-react';
-import { toast } from 'sonner';
-import { useApproveTask, useRejectTask } from '../hooks/useQueries';
+import { TaskResponse, ApprovalStatus, FinalStatus } from '../backend';
+import { useAdminReviewTask } from '../hooks/useQueries';
 import RejectTaskModal from './RejectTaskModal';
-import ProofPreviewModal from './ProofPreviewModal';
+import { toast } from 'sonner';
 
 interface ProofReviewPanelProps {
   task: TaskResponse;
+  isAdminView?: boolean;
 }
 
-function formatTimestamp(ts: bigint): string {
-  const ms = Number(ts) / 1_000_000;
-  return new Intl.DateTimeFormat('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(ms));
+function formatTimestamp(ns?: bigint): string {
+  if (ns == null) return 'Unknown';
+  const ms = Number(ns) / 1_000_000;
+  return new Date(ms).toLocaleString();
 }
 
-export default function ProofReviewPanel({ task }: ProofReviewPanelProps) {
-  const [showPreview, setShowPreview] = useState(false);
-  const [showRejectModal, setShowRejectModal] = useState(false);
+export default function ProofReviewPanel({ task, isAdminView = false }: ProofReviewPanelProps) {
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const adminReviewTask = useAdminReviewTask();
 
-  const approveTask = useApproveTask();
-  const rejectTask = useRejectTask();
+  const proofFile = task.proofFile;
+  const proofSubmittedBy = task.proofSubmittedBy;
+  // Use submittedAt (new field) with fallback to submissionTimestamp (legacy)
+  const submittedAt = task.submittedAt ?? task.submissionTimestamp;
 
-  const hasProof = !!task.proofFile;
-  const isPendingReview = task.approvalStatus === ApprovalStatus.pendingReview;
-  const isApproved = task.approvalStatus === ApprovalStatus.approved;
-  const isRejected = task.approvalStatus === ApprovalStatus.rejected;
-
-  if (!hasProof && !isPendingReview && !isApproved && !isRejected) {
-    return null;
-  }
-
-  const handleApprove = async () => {
-    try {
-      await approveTask.mutateAsync(task.taskId);
-      toast.success('Task approved successfully!');
-    } catch (err: any) {
-      toast.error(err?.message || 'Failed to approve task');
-    }
-  };
-
-  const handleDownload = () => {
-    if (!task.proofFile) return;
-    const url = task.proofFile.getDirectURL();
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `proof-task-${task.taskId}.file`;
-    a.target = '_blank';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  };
-
-  return (
-    <>
-      <Card className="border border-blue-200 bg-blue-50/40 mt-3">
-        <CardHeader className="pb-2 pt-3 px-4">
-          <CardTitle className="text-sm font-semibold text-blue-800 flex items-center gap-2">
-            <FileText className="w-4 h-4" />
-            Proof Review Section
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="px-4 pb-4 space-y-3">
-          {/* Employee Info */}
-          {task.proofSubmittedBy && (
-            <div className="flex items-start gap-2 text-sm">
-              <User className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
-              <div>
-                <span className="font-medium text-gray-700">{task.proofSubmittedBy}</span>
-                {task.proofSubmittedByEmail && (
-                  <span className="text-gray-500 ml-1">({task.proofSubmittedByEmail})</span>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Submission Time */}
-          {task.submissionTimestamp && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Clock className="w-4 h-4 text-gray-400 shrink-0" />
-              <span>Submitted: {formatTimestamp(task.submissionTimestamp)}</span>
-            </div>
-          )}
-
-          {/* File Preview Thumbnail */}
-          {task.proofFile && (
-            <div className="border rounded-lg overflow-hidden bg-white">
-              <ProofFileThumbnail proofFile={task.proofFile} />
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="flex flex-wrap gap-2 pt-1">
-            {task.proofFile && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowPreview(true)}
-                  className="gap-1.5 text-blue-700 border-blue-300 hover:bg-blue-50"
-                >
-                  <Eye className="w-3.5 h-3.5" />
-                  View Proof
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDownload}
-                  className="gap-1.5 text-gray-700 border-gray-300 hover:bg-gray-50"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  Download
-                </Button>
-              </>
-            )}
-
-            {isPendingReview && (
-              <>
-                <Button
-                  size="sm"
-                  onClick={handleApprove}
-                  disabled={approveTask.isPending}
-                  className="gap-1.5 bg-brand-green hover:bg-brand-green-dark text-white"
-                >
-                  <CheckCircle className="w-3.5 h-3.5" />
-                  {approveTask.isPending ? 'Approving...' : 'Approve'}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => setShowRejectModal(true)}
-                  className="gap-1.5"
-                >
-                  <XCircle className="w-3.5 h-3.5" />
-                  Reject
-                </Button>
-              </>
-            )}
-
-            {isApproved && (
-              <span className="inline-flex items-center gap-1.5 text-sm text-green-700 font-medium">
-                <CheckCircle className="w-4 h-4" />
-                Approved
-              </span>
-            )}
-
-            {isRejected && (
-              <span className="inline-flex items-center gap-1.5 text-sm text-red-700 font-medium">
-                <XCircle className="w-4 h-4" />
-                Rejected
-                {task.rejectionReason && (
-                  <span className="text-gray-500 font-normal">— {task.rejectionReason}</span>
-                )}
-              </span>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Modals */}
-      {task.proofFile && showPreview && (
-        <ProofPreviewModal
-          open={showPreview}
-          onClose={() => setShowPreview(false)}
-          proofFile={task.proofFile}
-          submittedBy={task.proofSubmittedBy}
-          submittedByEmail={task.proofSubmittedByEmail}
-          submissionTimestamp={task.submissionTimestamp}
-          taskTitle={task.title}
-        />
-      )}
-
-      {showRejectModal && (
-        <RejectTaskModal
-          taskId={task.taskId}
-          open={showRejectModal}
-          onClose={() => setShowRejectModal(false)}
-        />
-      )}
-    </>
-  );
-}
-
-// Small thumbnail component
-function ProofFileThumbnail({ proofFile }: { proofFile: NonNullable<TaskResponse['proofFile']> }) {
-  const [imgError, setImgError] = useState(false);
-  const url = proofFile.getDirectURL();
-  const isImage = /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(url);
-
-  if (isImage && !imgError) {
+  if (!proofFile) {
     return (
-      <img
-        src={url}
-        alt="Proof thumbnail"
-        className="w-full max-h-32 object-cover"
-        onError={() => setImgError(true)}
-      />
+      <div className="bg-blue-50 border border-blue-200 rounded p-3 text-xs text-blue-600">
+        Proof file not available.
+      </div>
     );
   }
 
+  const directUrl = proofFile.getDirectURL();
+  const isImage = directUrl.match(/\.(jpg|jpeg|png|gif|webp)(\?|$)/i) != null;
+
+  const handleApprove = async () => {
+    try {
+      await adminReviewTask.mutateAsync({
+        taskId: task.taskId,
+        decision: FinalStatus.approved,
+        reviewComment: null,
+      });
+      toast.success('Task approved successfully! Performance points awarded.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Approval failed';
+      toast.error(`Approval failed: ${message}`);
+    }
+  };
+
+  const handleRejectWithComment = async (comment: string) => {
+    try {
+      await adminReviewTask.mutateAsync({
+        taskId: task.taskId,
+        decision: FinalStatus.rejected,
+        reviewComment: comment,
+      });
+      toast.success('Task marked as incomplete. Employee will be notified.');
+      setRejectModalOpen(false);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Rejection failed';
+      toast.error(`Rejection failed: ${message}`);
+    }
+  };
+
+  const isPending = adminReviewTask.isPending;
+
   return (
-    <div className="flex items-center gap-3 p-3 text-gray-500">
-      <FileText className="w-8 h-8 text-gray-300" />
-      <span className="text-sm">Document / PDF file</span>
+    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex flex-col gap-3">
+      <div className="flex items-center gap-2 text-xs text-blue-700 font-semibold">
+        <FileText className="w-4 h-4" />
+        Proof Submitted
+      </div>
+
+      {/* Metadata */}
+      <div className="text-xs text-gray-600 space-y-1">
+        {proofSubmittedBy && (
+          <div className="flex items-center gap-1">
+            <User className="w-3 h-3 text-gray-400" />
+            <span className="font-medium">Employee: </span>
+            <span>{proofSubmittedBy}</span>
+            {task.proofSubmittedByEmail && (
+              <span className="text-gray-400">({task.proofSubmittedByEmail})</span>
+            )}
+          </div>
+        )}
+        {submittedAt != null && (
+          <div className="flex items-center gap-1">
+            <Calendar className="w-3 h-3 text-gray-400" />
+            <span className="font-medium">Submitted: </span>
+            <span>{formatTimestamp(submittedAt)}</span>
+          </div>
+        )}
+        {task.reviewedAt != null && (
+          <div className="flex items-center gap-1">
+            <Calendar className="w-3 h-3 text-gray-400" />
+            <span className="font-medium">Reviewed: </span>
+            <span>{formatTimestamp(task.reviewedAt)}</span>
+          </div>
+        )}
+      </div>
+
+      {/* File Preview */}
+      <div className="rounded overflow-hidden border border-blue-200 bg-white">
+        {isImage ? (
+          <img
+            src={directUrl}
+            alt="Proof"
+            className="w-full max-h-40 object-contain"
+          />
+        ) : (
+          <div className="flex items-center justify-center gap-2 p-4 text-gray-500">
+            <FileText className="w-6 h-6" />
+            <span className="text-xs">PDF Document</span>
+          </div>
+        )}
+      </div>
+
+      {/* View / Download Buttons */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <Button
+          variant="outline"
+          size="sm"
+          className="text-xs"
+          onClick={() => window.open(directUrl, '_blank')}
+        >
+          <Eye className="w-3 h-3 mr-1" />
+          View
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="text-xs"
+          asChild
+        >
+          <a href={directUrl} download>
+            <Download className="w-3 h-3 mr-1" />
+            Download
+          </a>
+        </Button>
+
+        {/* Approve / Mark Incomplete — Admin only, pending review tasks */}
+        {isAdminView && task.approvalStatus === ApprovalStatus.pendingReview && (
+          <>
+            <Button
+              size="sm"
+              className="text-xs bg-task-green hover:bg-task-green/90 text-white ml-auto"
+              onClick={handleApprove}
+              disabled={isPending}
+            >
+              {isPending ? (
+                <span className="flex items-center gap-1">
+                  <span className="animate-spin w-3 h-3 border border-white border-t-transparent rounded-full" />
+                  Approving…
+                </span>
+              ) : (
+                <>
+                  <CheckCircle className="w-3 h-3 mr-1" />
+                  Approve
+                </>
+              )}
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              className="text-xs"
+              onClick={() => setRejectModalOpen(true)}
+              disabled={isPending}
+            >
+              <XCircle className="w-3 h-3 mr-1" />
+              Mark Incomplete
+            </Button>
+          </>
+        )}
+      </div>
+
+      {/* Review Comment (shown after rejection) */}
+      {task.reviewComment && (
+        <div className="bg-red-50 border border-red-200 rounded p-2 text-xs text-red-700">
+          <span className="font-semibold">Review comment: </span>
+          {task.reviewComment}
+        </div>
+      )}
+
+      <RejectTaskModal
+        open={rejectModalOpen}
+        onOpenChange={setRejectModalOpen}
+        onReject={handleRejectWithComment}
+        isLoading={isPending}
+      />
     </div>
   );
 }

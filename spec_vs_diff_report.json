@@ -1,86 +1,52 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-25T11:37:14.751Z",
-  "summary": "The diff implements most of the required features across REQ-23 through REQ-28. Backend changes extend the task data model with proof metadata fields, add role-based visibility, and include a migration module. Frontend changes add ProofPreviewModal, ProofReviewPanel, RejectTaskModal, StatusBadge enhancements, TaskCard updates, ProofUploadButton updates, and query hooks. However, several specific acceptance criteria have gaps: the backend getProofForTask query with #unauthorized error variant is not clearly evidenced, the explicit role-check filtering in backend query responses is partially visible but truncated, and the useQueries.ts getProofForTask hook is not clearly shown in the diff.",
+  "generatedAt": "2026-02-25T12:40:30.120Z",
+  "summary": "The diff implements most of the required proof upload and admin review workflow. Backend changes in main.mo add the new fields, mutations (uploadProof, markComplete, adminReviewTask), and a migration module. Frontend changes add ProofUploadButton.tsx, ProofReviewPanel.tsx, RejectTaskModal.tsx, update TaskCard.tsx, EmployeeDashboard.tsx, and useQueries.ts with the three new mutation hooks. However, REQ-36 (field-level access control filtering proof fields based on caller role in query responses) is not clearly evidenced in the truncated main.mo diff, and the REQ-37 requirement to show proof controls for Rejected-status tasks appears partially addressed.",
   "missing_requirements": [
     {
-      "id": "REQ-23",
-      "requirement": "A backend query getProofForTask(taskId) enforces role/ownership check and returns an error variant (#unauthorized) when called by an ineligible principal.",
-      "reason": "The backend/main.mo diff is truncated and does not show a getProofForTask function with an #unauthorized error variant. The diff shows task model extensions but not this specific guarded query endpoint.",
+      "id": "REQ-36",
+      "requirement": "Update the task query responses in the Motoko backend actor so that proof-related fields are only included when the caller is an Admin or is the assignedTo principal of that specific task. For all other callers these fields must be omitted or returned as null.",
+      "reason": "The backend/main.mo diff is truncated and there is no visible evidence of query-level access control logic that filters proofFile, submittedAt, reviewedAt, reviewComment, and finalStatus based on the caller's identity or role. The migration module and task schema additions are visible, but the query filtering logic is absent from the shown diff.",
       "evidence": [
         "backend/main.mo"
       ]
     },
     {
-      "id": "REQ-23",
-      "requirement": "When a Manager or a different Employee (not the assignee) fetches task data, proofFile URL, submittedBy, and submissionTimestamp fields are absent or null in the response.",
-      "reason": "The backend/main.mo diff is truncated and does not clearly show the role-filtering logic in getAllTasks or getTasksForCaller that nulls out proof fields for non-admin, non-assignee callers.",
+      "id": "REQ-37",
+      "requirement": "The Upload Proof button and Mark as Completed button must be visible on task cards where status is Yellow (In Progress) OR Rejected.",
+      "reason": "In TaskCard.tsx, the canUploadProof condition checks only for statusKey === TaskStatus.yellow and explicitly excludes when approvalKey === ApprovalStatus.rejected. This means the upload controls would not appear after a rejection, contradicting the spec requirement to show them when status is Rejected.",
       "evidence": [
-        "backend/main.mo"
-      ]
-    },
-    {
-      "id": "REQ-28",
-      "requirement": "getProofForTask hook is defined in useQueries.ts and calls the backend proof access query; the hook is only called within Admin task views or within the employee's own task card (matching assignedTo).",
-      "reason": "The useQueries.ts diff is truncated. There is no visible evidence of a getProofForTask hook defined in the file. The existing hooks shown do not include this specific hook.",
-      "evidence": [
-        "frontend/src/hooks/useQueries.ts"
-      ]
-    },
-    {
-      "id": "REQ-28",
-      "requirement": "No proof URL is stored in global query cache in a way that is accessible to Manager or other Employee components.",
-      "reason": "The query cache strategy for isolating proof data is not evidenced in the truncated useQueries.ts. The existing allTasks and tasksForCaller cache keys are shared without role-scoped cache isolation shown.",
-      "evidence": [
-        "frontend/src/hooks/useQueries.ts"
-      ]
-    },
-    {
-      "id": "REQ-25",
-      "requirement": "Employee task cards show a preview link or thumbnail for the proof only on tasks where the logged-in user is the assignee and a proof exists; no proof file link or data is rendered for tasks assigned to other employees.",
-      "reason": "The TaskCard.tsx is truncated and it cannot be fully confirmed that a proof link or thumbnail is only rendered when isAssignee is true in the employee view context.",
-      "evidence": [
-        "frontend/src/components/TaskCard.tsx",
-        "frontend/src/pages/EmployeeDashboard.tsx"
+        "frontend/src/components/TaskCard.tsx"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "ProofFileThumbnail sub-component referenced inside ProofReviewPanel.tsx but not defined anywhere in the diff",
-      "reason": "The diff references a ProofFileThumbnail component inside ProofReviewPanel.tsx but no such component file is added or defined, and it was not requested in any requirement.",
-      "evidence": [
-        "frontend/src/components/ProofReviewPanel.tsx"
-      ]
-    },
-    {
-      "description": "Formal migration module (backend/migration.mo) with typed OldActor/NewActor structs and a run() migration function",
-      "reason": "While data model extension was required (REQ-24), a formal migration module with typed OldActor/NewActor structs and a run() function was not explicitly requested in any requirement. The requirements only asked to extend the task data model.",
+      "description": "A migration module was added as a separate file backend/migration.mo.",
+      "reason": "The build request constraint states all Motoko logic must remain in the single main actor file (backend/main.mo). Placing migration logic in a separate file violates this constraint.",
       "evidence": [
         "backend/migration.mo"
       ]
+    },
+    {
+      "description": "ProofUploadButton includes a re-upload flow with a 'Re-upload Proof' button state after a proof has already been uploaded.",
+      "reason": "The requirements specify an upload button and a mark-complete button but do not mention or request a re-upload capability. This is an additional feature not requested.",
+      "evidence": [
+        "frontend/src/components/ProofUploadButton.tsx"
+      ]
     }
   ],
-  "confidence": 0.62,
+  "confidence": 0.72,
   "changed_files": [
     "backend/main.mo",
     "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/components/DeleteUserConfirmDialog.tsx",
-    "frontend/src/components/DepartmentProductivityPanel.tsx",
-    "frontend/src/components/EditUserRoleModal.tsx",
-    "frontend/src/components/GlobalTaskList.tsx",
-    "frontend/src/components/LeaderboardTable.tsx",
-    "frontend/src/components/ProofPreviewModal.tsx",
     "frontend/src/components/ProofReviewPanel.tsx",
     "frontend/src/components/ProofUploadButton.tsx",
     "frontend/src/components/RejectTaskModal.tsx",
-    "frontend/src/components/StatusBadge.tsx",
-    "frontend/src/components/TaskApprovalActions.tsx",
     "frontend/src/components/TaskCard.tsx",
     "frontend/src/hooks/useQueries.ts",
-    "frontend/src/pages/AdminDashboard.tsx",
     "frontend/src/pages/EmployeeDashboard.tsx",
     "project_state.json"
   ]

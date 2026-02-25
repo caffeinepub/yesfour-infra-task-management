@@ -1,130 +1,100 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Role-Based Proof File Visibility & Admin Proof Review Panel",
+  "title": "Add Proof Upload and Admin Review Workflow",
   "requirements": [
     {
-      "id": "REQ-25",
-      "summary": "Restrict proof file visibility on Employee Dashboard to only the employee's own tasks and add 'Pending Review' badge",
+      "id": "REQ-37",
+      "summary": "Add proof upload and mark-complete controls to Employee Dashboard task cards",
       "acceptanceCriteria": [
-        "Employee task cards show a preview link or thumbnail for the proof only on tasks where the logged-in user is the assignee and a proof exists.",
-        "No proof file link or data is rendered for tasks assigned to other employees.",
-        "After proof upload, the task card displays a 'Pending Review' badge alongside the existing status badge.",
-        "The ProofUploadButton remains visible only when task status is Yellow or Red (existing behaviour preserved)."
+        "Upload Proof button is visible on task cards where status is Yellow or Rejected.",
+        "'Mark as Completed' button is disabled until a proof file has been uploaded.",
+        "After upload and marking complete, the task card status badge changes to Blue (Pending Review).",
+        "The employee's own uploaded proof file is shown as a link or thumbnail on their task card.",
+        "Proof files from other employees' tasks are never shown.",
+        "No chat, email, or messaging UI elements are introduced.",
+        "Existing corporate theme (white background, green accent, card layout) is unchanged."
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/TaskCard.tsx",
           "operation": "modify",
-          "description": "Add conditional rendering for proof file preview (image thumbnail or link) that only displays when the logged-in user's principal matches the task's assignedTo principal and proofFile exists. Integrate the proof preview inline within the card layout. Verify the blob-storage component's usage instructions before implementing the ExternalBlob.getDirectURL() method for rendering the proof."
+          "description": "Add conditional rendering for proof upload section when task status is Yellow (In Progress) or has finalStatus rejected. Display ProofUploadButton and a 'Mark as Completed' button that is disabled until proofFile exists. Show the employee's own uploaded proof file as an inline link or thumbnail using the ExternalBlob getDirectURL() method. Ensure proof preview is only shown for the current user's own tasks. Use the blob-storage component to handle ExternalBlob display. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/components/StatusBadge.tsx",
+          "path": "frontend/src/components/ProofUploadButton.tsx",
           "operation": "modify",
-          "description": "Add a new 'Pending Review' badge variant that renders a blue badge when approvalStatus is 'pendingReview'. Ensure the badge uses the existing corporate color palette and integrates with the current size prop."
+          "description": "Extend the existing ProofUploadButton component to call the uploadProof mutation hook after file selection completes. Update the component to accept a taskId prop and trigger the mutation with the selected ExternalBlob file data. Add toast notifications for upload success and error states. Ensure the button remains within the existing card layout and styling. Use the blob-storage component's ExternalBlob.fromBytes() and withUploadProgress() methods to track upload progress. Verify the component's usage instructions before implementing."
         },
         {
           "path": "frontend/src/pages/EmployeeDashboard.tsx",
           "operation": "modify",
-          "description": "Pass the current user's principal from useAuth to TaskCard components so they can determine proof visibility. Ensure no proof data from other employees' tasks is rendered or accessible in the DOM."
+          "description": "Ensure the EmployeeDashboard correctly passes task data to TaskCard components so that proof upload controls are rendered when appropriate. Verify that the query invalidation after proof upload or markComplete mutations will refresh the task list automatically. No structural changes to the dashboard layout or theme are required."
         }
       ]
     },
     {
-      "id": "REQ-26",
-      "summary": "Add Admin-only proof metadata fields to All Tasks view in Admin Dashboard",
+      "id": "REQ-38",
+      "summary": "Add Admin Proof Review Panel to Admin Dashboard task cards",
       "acceptanceCriteria": [
-        "In the Admin Dashboard All Tasks list, each task card/row with a proof shows a blue 'Proof Uploaded' badge.",
-        "A 'View Proof' button is visible only to Admin; clicking it opens a preview modal or new tab showing the proof image/PDF.",
-        "A 'Download Proof' link is available alongside the View Proof button for Admin only.",
-        "Submission Timestamp is displayed in a readable format (e.g., 'DD MMM YYYY, HH:mm') for Admin.",
-        "Submitted By shows 'Employee Name (email@yesfour.com)' for Admin.",
-        "None of these fields are visible when the authenticated user is a Manager or Employee."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/TaskCard.tsx",
-          "operation": "modify",
-          "description": "Add an isAdminView boolean prop. When true and proofFile exists, render: a blue 'Proof Uploaded' badge, a 'View Proof' button that opens the proof in a modal or new tab using ExternalBlob.getDirectURL(), a 'Download Proof' link using the same URL with download attribute, a formatted Submission Timestamp (using Intl.DateTimeFormat or date-fns), and Submitted By text showing proofSubmittedBy and proofSubmittedByEmail. Ensure all proof-related UI is hidden when isAdminView is false. Verify the blob-storage component's usage instructions before implementing ExternalBlob access."
-        },
-        {
-          "path": "frontend/src/components/GlobalTaskList.tsx",
-          "operation": "modify",
-          "description": "Pass isAdminView={true} prop to TaskCard components when the authenticated user's role is Admin (retrieved via useAuth). Ensure Manager users do not receive this prop or see admin-only proof fields."
-        },
-        {
-          "path": "frontend/src/components/ProofPreviewModal.tsx",
-          "operation": "create",
-          "description": "Create a new modal component that displays a proof file preview. Accept a proofFile ExternalBlob prop. Render an image preview using ExternalBlob.getDirectURL() for image files, or a PDF viewer/icon for PDF files. Include a close button and handle loading states. Use shadcn/ui Dialog component for the modal structure. Verify the blob-storage component's usage instructions before implementing ExternalBlob rendering."
-        },
-        {
-          "path": "frontend/src/pages/AdminDashboard.tsx",
-          "operation": "modify",
-          "description": "Import and pass authentication context to child components. Ensure GlobalTaskList receives the current user's role so it can conditionally render admin-only proof fields."
-        }
-      ]
-    },
-    {
-      "id": "REQ-27",
-      "summary": "Add Admin-only Proof Review Panel with approve/reject actions and status badges to Admin task detail view",
-      "acceptanceCriteria": [
-        "When an Admin expands or views a task that has a proof, a 'Proof Review Section' panel is rendered.",
-        "The panel shows the employee's name, a file preview (image thumbnail or PDF icon), and the formatted upload date/time.",
-        "An 'Approve' button calls the existing approve task mutation and shows a success toast.",
-        "A 'Reject' button opens a modal with a mandatory rejection reason input; submission calls the existing reject task mutation.",
-        "A blue 'Proof Uploaded' badge appears on tasks where approvalStatus is #pendingReview.",
-        "A green 'Approved' badge appears on tasks where approvalStatus is #approved.",
-        "A red 'Rejected' badge appears on tasks where approvalStatus is #rejected.",
-        "The panel and all three badges are invisible to Manager and Employee roles.",
-        "Existing white + green corporate theme is preserved; no new colour tokens are introduced beyond the specified badge colours."
+        "Admin sees Proof Review Panel only on task cards where proofFile is present.",
+        "Panel shows Employee Name, Submission Date & Time, and a proof file preview or PDF icon.",
+        "Clicking 'Approve' calls the adminReviewTask mutation with #approved and updates the task status badge to Green.",
+        "Clicking 'Mark Incomplete' opens a modal with a required review comment text area; submitting calls adminReviewTask with #rejected and the comment.",
+        "Submitting the reject modal without a comment shows a validation error and does not submit.",
+        "After rejection, the task status badge reverts to Yellow (In Progress) and the review comment is stored.",
+        "Proof Review Panel and Approve/Mark Incomplete buttons are completely hidden for Manager and Employee roles.",
+        "Existing admin dashboard layout and corporate theme remain unchanged."
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/ProofReviewPanel.tsx",
-          "operation": "create",
-          "description": "Create an Admin-only panel component that accepts a TaskResponse prop. Display: employee name (proofSubmittedBy), proof file preview (image thumbnail using ExternalBlob.getDirectURL() or PDF icon), and formatted upload date/time (submissionTimestamp). Include an 'Approve' button that calls the useApproveTask mutation and shows a success toast. Include a 'Reject' button that opens the existing RejectTaskModal component. Wrap the entire panel in a role check: only render when the current user is Admin. Use shadcn/ui Card component for the panel structure. Verify the blob-storage component's usage instructions before implementing ExternalBlob rendering."
-        },
-        {
-          "path": "frontend/src/components/StatusBadge.tsx",
           "operation": "modify",
-          "description": "Add three new approval status badge variants: 'Proof Uploaded' (blue, for approvalStatus 'pendingReview'), 'Approved' (green, for approvalStatus 'approved'), and 'Rejected' (red, for approvalStatus 'rejected'). Use the existing corporate color palette for green; add blue and red using Tailwind's default palette. Ensure badges integrate with the existing size prop and design system."
+          "description": "Update ProofReviewPanel to display Employee Name (using the proofSubmittedBy field or assignedTo principal resolved to a UserProfile name), Submission Date & Time (formatted from submittedAt bigint timestamp), and a proof file preview using ExternalBlob's getDirectURL() for images or a PDF icon with filename for PDFs. Replace existing approve/reject logic to call the adminReviewTask mutation hook with decision parameter #approved or #rejected. Integrate RejectTaskModal for collecting the required reviewComment when rejecting. Add toast notifications for success and error states. Use the blob-storage component to render the proof file preview. Verify the component's usage instructions before implementing."
         },
         {
           "path": "frontend/src/components/TaskCard.tsx",
           "operation": "modify",
-          "description": "When isAdminView is true and the task has an approvalStatus, render the appropriate approval status badge (Proof Uploaded/Approved/Rejected) below or alongside the task status badge. Add an expandable/collapsible section or detail slot where the ProofReviewPanel component can be rendered for tasks with proofFile. Ensure the panel is only visible to Admin users."
+          "description": "Add conditional rendering to show ProofReviewPanel within the task card only when the current user is an Admin (using the isAdmin flag from useAuth) and the task has a proofFile present. Ensure ProofReviewPanel is completely hidden for Manager and Employee roles. Position the panel within the existing card structure without altering the overall layout or theme."
+        },
+        {
+          "path": "frontend/src/components/RejectTaskModal.tsx",
+          "operation": "modify",
+          "description": "Update RejectTaskModal to accept a new onRejectWithComment callback that receives the reviewComment text. Ensure the modal validates that the comment is non-empty before allowing submission. Add error feedback if the user attempts to submit without entering a comment. Maintain existing modal styling and layout."
+        },
+        {
+          "path": "frontend/src/pages/AdminDashboard.tsx",
+          "operation": "modify",
+          "description": "Ensure the AdminDashboard passes complete task data (including proofFile, submittedAt, reviewedAt, reviewComment, finalStatus) to TaskCard and GlobalTaskList so that proof review controls render correctly. Verify that the adminReviewTask mutation invalidates task queries on success to refresh the UI automatically. No structural changes to the dashboard layout or tabs are required."
         },
         {
           "path": "frontend/src/components/GlobalTaskList.tsx",
           "operation": "modify",
-          "description": "For Admin users, integrate the ProofReviewPanel into the task detail/expanded view for tasks that have a proofFile. Ensure the panel is rendered within or below the TaskCard when the user expands a task or views task details."
+          "description": "Ensure GlobalTaskList passes complete task data to TaskCard components so that proof review controls are rendered when appropriate for Admin users. No filter or layout changes are required."
         }
       ]
     },
     {
-      "id": "REQ-28",
-      "summary": "Add role-based proof data fetching logic to React Query hooks and prevent unauthorized proof access",
+      "id": "REQ-39",
+      "summary": "Add React Query hooks for proof upload, mark complete, and admin review mutations",
       "acceptanceCriteria": [
-        "getProofForTask hook is defined in useQueries.ts and calls the backend proof access query.",
-        "The hook is only called within Admin task views or within the employee's own task card (matching assignedTo).",
-        "If the backend returns an #unauthorized error, the frontend silently suppresses the proof section rather than crashing.",
-        "No proof URL is stored in global query cache in a way that is accessible to Manager or other Employee components."
+        "useUploadProof mutation hook exists and calls the backend uploadProof mutation.",
+        "useMarkComplete mutation hook exists and calls the backend markComplete mutation.",
+        "useAdminReviewTask mutation hook exists and calls the backend adminReviewTask mutation.",
+        "All three hooks invalidate task list queries on success so the UI refreshes automatically.",
+        "Proof fields are only present in client-side state when the user is Admin or the task assignee.",
+        "No TypeScript compilation errors are introduced in useQueries.ts."
       ],
       "file_operations": [
         {
           "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Add a useGetProofForTask(taskId: bigint, assignedTo: Principal) query hook that conditionally fetches proof data only when the current user is Admin or matches the assignedTo principal. The hook should return the proof-related fields (proofFile, submittedByName, submittedByEmail, submissionTimestamp) from the task. If the backend returns an error or unauthorized response, return null and suppress errors. Use a unique query key that includes the taskId and current user principal to prevent cache leakage across roles."
+          "description": "Add three new mutation hooks: useUploadProof (accepts taskId: bigint and file: ExternalBlob, calls actor.uploadProof), useMarkComplete (accepts taskId: bigint, calls actor.markComplete), and useAdminReviewTask (accepts taskId: bigint, decision: FinalStatus, reviewComment: string | null, calls actor.adminReviewTask). Each mutation hook must invalidate the relevant task list query keys on success (e.g., 'allTasks', 'tasksForCaller', 'tasksForUser'). Ensure the TypeScript types match the backend interface (FinalStatus enum, ExternalBlob class). Use the blob-storage component's ExternalBlob class for file handling. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/components/TaskCard.tsx",
+          "path": "frontend/src/hooks/useAuth.ts",
           "operation": "modify",
-          "description": "Replace direct proof field access with conditional useGetProofForTask hook calls when rendering proof data. Only invoke the hook when isAdminView is true or the current user matches assignedTo. Handle null/error responses gracefully by hiding the proof section without throwing errors."
-        },
-        {
-          "path": "frontend/src/components/ProofReviewPanel.tsx",
-          "operation": "modify",
-          "description": "Use the useGetProofForTask hook to fetch proof data for the given task. Handle loading and error states. If proof data is unavailable or unauthorized, render a fallback message or hide the panel entirely."
+          "description": "Ensure the useAuth hook correctly exposes the isAdmin flag and that proof-related fields from task queries are only consumed when the authenticated user is Admin or the task's assignedTo principal. No structural changes to the authentication logic are required."
         }
       ]
     }

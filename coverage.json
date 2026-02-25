@@ -1,91 +1,92 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-25T11:37:14.755Z",
+  "generatedAt": "2026-02-25T12:40:30.124Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 6,
-    "implemented": 4,
+    "total": 8,
+    "implemented": 3,
     "items": [
       {
-        "id": "REQ-23",
-        "summary": "Update the backend Motoko actor so that proof file data (proofFile blob/path, submittedBy, submissionTimestamp) stored on a task record is only returned in query responses to the Admin role or the employee who is the assignedTo principal of that specific task. For all other callers, these fields must be omitted or nulled out in the returned task record.",
+        "id": "REQ-32",
+        "summary": "Extend the Task data model in the Motoko backend actor to add the following optional fields: proofFile (Text — safe relative URL or blob key), submittedAt (Int — nanosecond timestamp), reviewedAt (Int — nanosecond timestamp), reviewComment (Text), and finalStatus (variant: #pendingReview | #approved | #rejected). These fields must be stored on each task record and initialised as null/empty on task creation.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-24",
-        "summary": "Extend the task data model in the Motoko backend to ensure that when an employee uploads proof, the task stores: proofFile (safe relative URL or blob key — never a full server path), submittedByName (employee full name), submittedByEmail (employee email), and submissionTimestamp (nanosecond timestamp). The task's approvalStatus must be set to #pendingReview upon proof upload, and status must transition to Blue (#blue) at that point.",
+        "id": "REQ-33",
+        "summary": "Add an uploadProof mutation in the Motoko backend actor. It accepts a taskId and a proof file reference (base64 string or safe URL key). It must: (1) verify the caller is the assignedTo principal of that task, returning an #unauthorized error otherwise; (2) store the proofFile value, set submittedAt to the current time, set the task's approvalStatus to #pendingReview, and set the task status to #blue (Pending Review); (3) return the updated task on success.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-25",
-        "summary": "On the Employee Dashboard (EmployeeDashboard.tsx / ProofUploadButton.tsx), ensure that: (1) each employee can only see their own uploaded proof file (rendered inline or as a link) within their own task card; (2) proof files belonging to other employees are never fetched or displayed; (3) after upload, a 'Pending Review' label or badge appears on the task card to communicate status to the employee.",
+        "id": "REQ-34",
+        "summary": "Add a markComplete mutation in the Motoko backend actor. It accepts a taskId. It must: (1) verify the caller is the assignedTo principal of that task and that the task already has a proofFile uploaded, returning appropriate errors otherwise; (2) confirm the submission by recording submittedAt if not already set; (3) ensure the task's approvalStatus is #pendingReview and status is #blue. This mutation represents the employee's final confirmation after proof upload.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-35",
+        "summary": "Add an adminReviewTask mutation in the Motoko backend actor. It accepts taskId, decision (#approved | #rejected), and an optional reviewComment (Text). It must: (1) verify the caller has the Admin role, returning #unauthorized otherwise; (2) if decision is #approved: set finalStatus = #approved, approvalStatus = #approved, task status = #green, reviewedAt = now, award performance points to the assignee (+10 if deadline not passed, -5 if overdue); (3) if decision is #rejected: require a non-empty reviewComment (return error if missing), set finalStatus = #rejected, approvalStatus = #rejected, task status = #yellow (back to In Progress), reviewedAt = now, store reviewComment.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-36",
+        "summary": "Update the task query responses in the Motoko backend actor so that proof-related fields (proofFile, submittedAt, reviewedAt, reviewComment, finalStatus) are only included in the returned task record when the caller is an Admin or is the assignedTo principal of that specific task. For all other callers these fields must be omitted or returned as null.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-37",
+        "summary": "On the Employee Dashboard (EmployeeDashboard.tsx and ProofUploadButton.tsx), add a proof upload button and a 'Mark as Completed' button to each task card where the task status is Yellow (In Progress) or Rejected. The 'Mark as Completed' button must only be enabled after a proof file has been selected and uploaded. After successful submission the task card must immediately reflect the 'Pending Review' status badge (Blue). The employee must also be able to view their own previously uploaded proof file displayed as an inline link or thumbnail within their task card. No changes to the existing design theme, spacing, or layout are permitted beyond adding these controls.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/components/TaskCard.tsx",
-          "frontend/src/components/StatusBadge.tsx",
+          "frontend/src/components/ProofUploadButton.tsx",
           "frontend/src/pages/EmployeeDashboard.tsx"
         ],
         "matchedFiles": [
           "frontend/src/components/TaskCard.tsx",
-          "frontend/src/components/StatusBadge.tsx",
+          "frontend/src/components/ProofUploadButton.tsx",
           "frontend/src/pages/EmployeeDashboard.tsx"
         ]
       },
       {
-        "id": "REQ-26",
-        "summary": "In the Admin Dashboard → All Tasks view (AdminDashboard.tsx / GlobalTaskList.tsx / TaskCard.tsx), add Admin-only visible fields to each task entry: a blue 'Proof Uploaded' badge (shown when proofFile exists), a 'View Proof' button that fetches and opens the proof (image preview or PDF) in a modal or new tab, a 'Download Proof' option, the Submission Timestamp formatted as a human-readable date/time string, and the Submitted By field showing Employee Name and Email. These fields must be completely hidden for Manager and Employee roles.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/TaskCard.tsx",
-          "frontend/src/components/GlobalTaskList.tsx",
-          "frontend/src/components/ProofPreviewModal.tsx",
-          "frontend/src/pages/AdminDashboard.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/TaskCard.tsx",
-          "frontend/src/components/GlobalTaskList.tsx",
-          "frontend/src/components/ProofPreviewModal.tsx",
-          "frontend/src/pages/AdminDashboard.tsx"
-        ]
-      },
-      {
-        "id": "REQ-27",
-        "summary": "Add an Admin-only Proof Review Panel section inside the Admin Task detail/expanded view in the Admin Dashboard. The panel must display: Employee Name, an uploaded file preview (image thumbnail or PDF icon with filename), Uploaded Date & Time, an Approve button (calls the existing approve mutation), and a Reject button that opens a modal requiring a rejection reason text input before submission. Add three status indicator badges used throughout the Admin view: a blue badge labelled 'Proof Uploaded', a green badge labelled 'Approved', and a red badge labelled 'Rejected', reflecting the current approvalStatus of the task.",
+        "id": "REQ-38",
+        "summary": "On the Admin Dashboard (AdminDashboard.tsx, GlobalTaskList.tsx, TaskCard.tsx), add an Admin-only Proof Review Panel within each task card or expanded task detail that has a proofFile present. The panel must display: Employee Name, Submission Date & Time (formatted as human-readable string), an uploaded proof preview (image thumbnail or PDF icon with filename), an 'Approve' button (calls adminReviewTask with #approved), and a 'Mark Incomplete' button that opens a modal requiring a non-empty review comment before submission (calls adminReviewTask with #rejected and the comment). After admin action, the task card must immediately reflect the updated status badge (Green for Approved, Yellow/In Progress for Rejected). These admin controls must be completely hidden for Manager and Employee roles.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/components/ProofReviewPanel.tsx",
-          "frontend/src/components/StatusBadge.tsx",
           "frontend/src/components/TaskCard.tsx",
+          "frontend/src/components/RejectTaskModal.tsx",
+          "frontend/src/pages/AdminDashboard.tsx",
           "frontend/src/components/GlobalTaskList.tsx"
         ],
         "matchedFiles": [
           "frontend/src/components/ProofReviewPanel.tsx",
-          "frontend/src/components/StatusBadge.tsx",
           "frontend/src/components/TaskCard.tsx",
-          "frontend/src/components/GlobalTaskList.tsx"
+          "frontend/src/components/RejectTaskModal.tsx"
         ]
       },
       {
-        "id": "REQ-28",
-        "summary": "Update the useQueries.ts hooks and any relevant React Query fetch logic to ensure: (1) proof-related fields (proofFile URL, submittedByName, submittedByEmail, submissionTimestamp) are only requested and stored client-side when the authenticated user is Admin or the task's own assignee; (2) a getProofForTask(taskId) query hook is added that calls the protected backend query and is only invoked from Admin-role views or the employee's own task view.",
+        "id": "REQ-39",
+        "summary": "Update the React Query hooks in useQueries.ts to add: (1) an uploadProof mutation hook that calls the backend uploadProof mutation with taskId and file data; (2) a markComplete mutation hook that calls the backend markComplete mutation with taskId; (3) an adminReviewTask mutation hook that calls the backend adminReviewTask mutation with taskId, decision, and optional reviewComment. All three hooks must invalidate the relevant task list queries on success. Proof-related fields in task query responses must only be stored and consumed client-side when the authenticated user is Admin or the task's own assignee.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/hooks/useQueries.ts",
-          "frontend/src/components/TaskCard.tsx",
-          "frontend/src/components/ProofReviewPanel.tsx"
+          "frontend/src/hooks/useAuth.ts"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/components/TaskCard.tsx",
-          "frontend/src/components/ProofReviewPanel.tsx"
+          "frontend/src/hooks/useQueries.ts"
         ]
       }
     ]
@@ -99,22 +100,13 @@
     "frontend-implementation-plan.json",
     "frontend/src/backend.d.ts",
     "frontend/src/backend.ts",
-    "frontend/src/components/DeleteUserConfirmDialog.tsx",
-    "frontend/src/components/DepartmentProductivityPanel.tsx",
-    "frontend/src/components/EditUserRoleModal.tsx",
-    "frontend/src/components/GlobalTaskList.tsx",
-    "frontend/src/components/LeaderboardTable.tsx",
-    "frontend/src/components/ProofPreviewModal.tsx",
     "frontend/src/components/ProofReviewPanel.tsx",
     "frontend/src/components/ProofUploadButton.tsx",
     "frontend/src/components/RejectTaskModal.tsx",
-    "frontend/src/components/StatusBadge.tsx",
-    "frontend/src/components/TaskApprovalActions.tsx",
     "frontend/src/components/TaskCard.tsx",
     "frontend/src/declarations/backend.did.d.ts",
     "frontend/src/declarations/backend.did.js",
     "frontend/src/hooks/useQueries.ts",
-    "frontend/src/pages/AdminDashboard.tsx",
     "frontend/src/pages/EmployeeDashboard.tsx",
     "project_state.json",
     "scratch/component-selection.json",

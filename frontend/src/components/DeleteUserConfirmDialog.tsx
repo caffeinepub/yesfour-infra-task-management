@@ -1,69 +1,61 @@
-import { toast } from 'sonner';
-import { Principal } from '@dfinity/principal';
-import { useDeleteUser } from '../hooks/useQueries';
+import React from 'react';
 import {
   AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
   AlertDialogDescription,
   AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Loader2 } from 'lucide-react';
+import { useDeleteUser } from '../hooks/useQueries';
+import { toast } from 'sonner';
+import { Principal } from '@dfinity/principal';
 
 interface DeleteUserConfirmDialogProps {
   open: boolean;
-  onClose: () => void;
-  userPrincipal: Principal | null;
+  onOpenChange: (open: boolean) => void;
+  userPrincipal: Principal;
   userName: string;
 }
 
 export default function DeleteUserConfirmDialog({
   open,
-  onClose,
+  onOpenChange,
   userPrincipal,
   userName,
 }: DeleteUserConfirmDialogProps) {
   const deleteUser = useDeleteUser();
 
-  const handleConfirm = async () => {
-    if (!userPrincipal) return;
+  const handleDelete = async () => {
     try {
       await deleteUser.mutateAsync(userPrincipal.toString());
-      toast.success(`User "${userName}" has been deleted.`);
-      onClose();
+      toast.success(`User ${userName} deleted successfully.`);
+      onOpenChange(false);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to delete user';
-      toast.error(message);
+      const message = err instanceof Error ? err.message : 'Delete failed';
+      toast.error(`Failed to delete user: ${message}`);
     }
   };
 
-  const handleOpenChange = (isOpen: boolean) => {
-    if (!isOpen) onClose();
-  };
-
   return (
-    <AlertDialog open={open} onOpenChange={handleOpenChange}>
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Delete User</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to permanently delete{' '}
-            <span className="font-semibold text-foreground">{userName}</span>? This action cannot
-            be undone and all associated data will be removed.
+            Are you sure you want to permanently delete <strong>{userName}</strong>? This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={deleteUser.isPending}>Cancel</AlertDialogCancel>
           <AlertDialogAction
-            onClick={handleConfirm}
+            onClick={handleDelete}
             disabled={deleteUser.isPending}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {deleteUser.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Delete User
+            {deleteUser.isPending ? 'Deleting…' : 'Delete'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

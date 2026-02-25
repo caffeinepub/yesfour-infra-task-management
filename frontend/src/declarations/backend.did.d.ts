@@ -22,6 +22,9 @@ export type Department = { 'construction' : null } |
   { 'travelDesk' : null } |
   { 'apartments' : null };
 export type ExternalBlob = Uint8Array;
+export type FinalStatus = { 'pendingReview' : null } |
+  { 'approved' : null } |
+  { 'rejected' : null };
 export type TaskPriority = { 'low' : null } |
   { 'high' : null } |
   { 'medium' : null };
@@ -32,10 +35,14 @@ export interface TaskResponse {
   'assignedTo' : Principal,
   'completionTime' : [] | [Time],
   'submissionTimestamp' : [] | [Time],
+  'finalStatus' : [] | [FinalStatus],
   'rejectionReason' : [] | [string],
+  'submittedAt' : [] | [Time],
   'description' : string,
   'performancePoints' : bigint,
+  'reviewComment' : [] | [string],
   'deadline' : Time,
+  'reviewedAt' : [] | [Time],
   'approvalStatus' : ApprovalStatus,
   'taskId' : bigint,
   'proofSubmittedBy' : [] | [string],
@@ -103,6 +110,15 @@ export interface _SERVICE {
   '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   /**
+   * / Admin review of a task: approve or reject.
+   * / Only admins may call this function.
+   * / Rejection requires a non-empty reviewComment.
+   */
+  'adminReviewTask' : ActorMethod<
+    [bigint, FinalStatus, [] | [string]],
+    TaskResponse
+  >,
+  /**
    * / Approve a task. Accessible by admins and managers only.
    */
   'approveTask' : ActorMethod<[bigint], undefined>,
@@ -156,6 +172,13 @@ export interface _SERVICE {
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   /**
+   * / Mark a task as complete (employee's final confirmation after proof upload).
+   * / Only the assigned employee (caller == assignedTo) may call this.
+   * / The caller must also be a registered user (#user permission).
+   * / The task must already have a proofFile uploaded.
+   */
+  'markComplete' : ActorMethod<[bigint], TaskResponse>,
+  /**
    * / Reject a task. Accessible by admins and managers only.
    */
   'rejectTask' : ActorMethod<[bigint, string], undefined>,
@@ -166,12 +189,11 @@ export interface _SERVICE {
   >,
   'updateUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   /**
-   * / Upload proof for a task. Only the assigned employee can upload proof.
+   * / Upload proof for a task.
+   * / Only the assigned employee (caller == assignedTo) may call this.
+   * / The caller must also be a registered user (#user permission).
    */
-  'uploadProofFile' : ActorMethod<
-    [bigint, ExternalBlob, string, string],
-    undefined
-  >,
+  'uploadProof' : ActorMethod<[bigint, ExternalBlob], TaskResponse>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

@@ -1,32 +1,39 @@
-import React, { useState } from 'react';
-import { TaskResponse, Department, TaskStatus, TaskPriority, ApprovalStatus } from '../backend';
-import TaskCard from './TaskCard';
-import TaskApprovalActions from './TaskApprovalActions';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import React, { useState, useMemo } from 'react';
+import { Search, Filter } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import TaskCard from './TaskCard';
+import { TaskResponse, TaskStatus, Department } from '../backend';
 
 interface GlobalTaskListProps {
   tasks: TaskResponse[];
   isAdminView?: boolean;
-  showApprovalActions?: boolean;
+  currentUserPrincipal?: string;
+  submittedByName?: string;
+  submittedByEmail?: string;
 }
 
 const departmentOptions = [
   { value: 'all', label: 'All Departments' },
-  { value: 'construction', label: 'Construction' },
-  { value: 'marketing', label: 'Marketing' },
-  { value: 'travelDesk', label: 'Travel Desk' },
-  { value: 'accounts', label: 'Accounts' },
-  { value: 'apartments', label: 'Apartments' },
+  { value: Department.construction, label: 'Construction' },
+  { value: Department.marketing, label: 'Marketing' },
+  { value: Department.travelDesk, label: 'Travel Desk' },
+  { value: Department.accounts, label: 'Accounts' },
+  { value: Department.apartments, label: 'Apartments' },
 ];
 
 const statusOptions = [
   { value: 'all', label: 'All Statuses' },
-  { value: 'red', label: 'Overdue' },
-  { value: 'yellow', label: 'In Progress' },
-  { value: 'blue', label: 'Under Review' },
-  { value: 'green', label: 'Completed' },
+  { value: TaskStatus.red, label: 'Overdue' },
+  { value: TaskStatus.yellow, label: 'In Progress' },
+  { value: TaskStatus.blue, label: 'Pending Review' },
+  { value: TaskStatus.green, label: 'Completed' },
 ];
 
 const priorityOptions = [
@@ -36,53 +43,58 @@ const priorityOptions = [
   { value: 'low', label: 'Low' },
 ];
 
+function getEnumKey(val: unknown): string {
+  if (typeof val === 'string') return val;
+  if (typeof val === 'object' && val !== null) return Object.keys(val)[0];
+  return String(val);
+}
+
 export default function GlobalTaskList({
   tasks,
   isAdminView = false,
-  showApprovalActions = false,
+  currentUserPrincipal,
+  submittedByName,
+  submittedByEmail,
 }: GlobalTaskListProps) {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [search, setSearch] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
 
-  const filtered = tasks.filter((task) => {
-    const dept = task.department as unknown as Record<string, null>;
-    const deptKey = Object.keys(dept)[0] || '';
+  const filtered = useMemo(() => {
+    return tasks.filter((task) => {
+      const titleMatch = task.title.toLowerCase().includes(search.toLowerCase());
+      const deptKey = getEnumKey(task.department);
+      const statusKey = getEnumKey(task.status);
+      const priorityKey = getEnumKey(task.priority);
 
-    const status = task.status as unknown as Record<string, null>;
-    const statusKey = Object.keys(status)[0] || '';
+      const deptMatch = departmentFilter === 'all' || deptKey === departmentFilter;
+      const statusMatch = statusFilter === 'all' || statusKey === statusFilter;
+      const priorityMatch = priorityFilter === 'all' || priorityKey === priorityFilter;
 
-    const priority = task.priority as unknown as Record<string, null>;
-    const priorityKey = Object.keys(priority)[0] || '';
-
-    const matchesDept = departmentFilter === 'all' || deptKey === departmentFilter;
-    const matchesStatus = statusFilter === 'all' || statusKey === statusFilter;
-    const matchesPriority = priorityFilter === 'all' || priorityKey === priorityFilter;
-    const matchesSearch =
-      !searchQuery ||
-      task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      task.description.toLowerCase().includes(searchQuery.toLowerCase());
-
-    return matchesDept && matchesStatus && matchesPriority && matchesSearch;
-  });
+      return titleMatch && deptMatch && statusMatch && priorityMatch;
+    });
+  }, [tasks, search, departmentFilter, statusFilter, priorityFilter]);
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4">
       {/* Filters */}
       <div className="flex flex-wrap gap-3 items-center">
-        <div className="relative flex-1 min-w-48">
+        <div className="relative flex-1 min-w-[180px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <Input
-            placeholder="Search tasks..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search tasks…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
           />
         </div>
+        <div className="flex items-center gap-1 text-gray-400">
+          <Filter className="w-4 h-4" />
+        </div>
         <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-          <SelectTrigger className="w-44">
-            <SelectValue />
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="Department" />
           </SelectTrigger>
           <SelectContent>
             {departmentOptions.map((opt) => (
@@ -93,8 +105,8 @@ export default function GlobalTaskList({
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40">
-            <SelectValue />
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
             {statusOptions.map((opt) => (
@@ -105,8 +117,8 @@ export default function GlobalTaskList({
           </SelectContent>
         </Select>
         <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-          <SelectTrigger className="w-36">
-            <SelectValue />
+          <SelectTrigger className="w-[140px]">
+            <SelectValue placeholder="Priority" />
           </SelectTrigger>
           <SelectContent>
             {priorityOptions.map((opt) => (
@@ -118,37 +130,29 @@ export default function GlobalTaskList({
         </Select>
       </div>
 
-      {/* Result count */}
+      {/* Task Count */}
       <p className="text-sm text-gray-500">
-        Showing <span className="font-medium text-gray-700">{filtered.length}</span> of{' '}
-        <span className="font-medium text-gray-700">{tasks.length}</span> tasks
+        {filtered.length} task{filtered.length !== 1 ? 's' : ''} found
       </p>
 
       {/* Task Grid */}
       {filtered.length === 0 ? (
         <div className="text-center py-12 text-gray-400">
-          <p className="text-sm">No tasks match the current filters.</p>
+          <p className="text-lg font-medium">No tasks found</p>
+          <p className="text-sm">Try adjusting your filters</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map((task) => {
-            const taskStatus = task.status as unknown as Record<string, null>;
-            const statusKey = Object.keys(taskStatus)[0] || '';
-            const isBlue = statusKey === 'blue';
-
-            return (
-              <TaskCard
-                key={Number(task.taskId)}
-                task={task}
-                isAdminView={isAdminView}
-                actionSlot={
-                  showApprovalActions && isBlue ? (
-                    <TaskApprovalActions task={task} />
-                  ) : undefined
-                }
-              />
-            );
-          })}
+          {filtered.map((task) => (
+            <TaskCard
+              key={Number(task.taskId)}
+              task={task}
+              isAdminView={isAdminView}
+              currentUserPrincipal={currentUserPrincipal}
+              submittedByName={submittedByName}
+              submittedByEmail={submittedByEmail}
+            />
+          ))}
         </div>
       )}
     </div>

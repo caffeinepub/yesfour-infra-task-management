@@ -19,29 +19,10 @@ export const _CaffeineStorageRefillResult = IDL.Record({
   'success' : IDL.Opt(IDL.Bool),
   'topped_up_amount' : IDL.Opt(IDL.Nat),
 });
-export const UserRole__1 = IDL.Variant({
-  'admin' : IDL.Null,
-  'user' : IDL.Null,
-  'guest' : IDL.Null,
-});
-export const Department = IDL.Variant({
-  'construction' : IDL.Null,
-  'marketing' : IDL.Null,
-  'accounts' : IDL.Null,
-  'travelDesk' : IDL.Null,
-  'apartments' : IDL.Null,
-});
-export const Time = IDL.Int;
-export const TaskPriority = IDL.Variant({
-  'low' : IDL.Null,
-  'high' : IDL.Null,
-  'medium' : IDL.Null,
-});
-export const UserSummary = IDL.Record({
-  'principal' : IDL.Principal,
-  'name' : IDL.Text,
-  'email' : IDL.Text,
-  'department' : IDL.Text,
+export const FinalStatus = IDL.Variant({
+  'pendingReview' : IDL.Null,
+  'approved' : IDL.Null,
+  'rejected' : IDL.Null,
 });
 export const TaskStatus = IDL.Variant({
   'red' : IDL.Null,
@@ -50,11 +31,24 @@ export const TaskStatus = IDL.Variant({
   'yellow' : IDL.Null,
 });
 export const ExternalBlob = IDL.Vec(IDL.Nat8);
+export const Time = IDL.Int;
 export const ApprovalStatus = IDL.Variant({
   'pendingReview' : IDL.Null,
   'pending' : IDL.Null,
   'approved' : IDL.Null,
   'rejected' : IDL.Null,
+});
+export const TaskPriority = IDL.Variant({
+  'low' : IDL.Null,
+  'high' : IDL.Null,
+  'medium' : IDL.Null,
+});
+export const Department = IDL.Variant({
+  'construction' : IDL.Null,
+  'marketing' : IDL.Null,
+  'accounts' : IDL.Null,
+  'travelDesk' : IDL.Null,
+  'apartments' : IDL.Null,
 });
 export const TaskResponse = IDL.Record({
   'status' : TaskStatus,
@@ -63,16 +57,31 @@ export const TaskResponse = IDL.Record({
   'assignedTo' : IDL.Principal,
   'completionTime' : IDL.Opt(Time),
   'submissionTimestamp' : IDL.Opt(Time),
+  'finalStatus' : IDL.Opt(FinalStatus),
   'rejectionReason' : IDL.Opt(IDL.Text),
+  'submittedAt' : IDL.Opt(Time),
   'description' : IDL.Text,
   'performancePoints' : IDL.Int,
+  'reviewComment' : IDL.Opt(IDL.Text),
   'deadline' : Time,
+  'reviewedAt' : IDL.Opt(Time),
   'approvalStatus' : ApprovalStatus,
   'taskId' : IDL.Nat,
   'proofSubmittedBy' : IDL.Opt(IDL.Text),
   'priority' : TaskPriority,
   'proofSubmittedByEmail' : IDL.Opt(IDL.Text),
   'department' : Department,
+});
+export const UserRole__1 = IDL.Variant({
+  'admin' : IDL.Null,
+  'user' : IDL.Null,
+  'guest' : IDL.Null,
+});
+export const UserSummary = IDL.Record({
+  'principal' : IDL.Principal,
+  'name' : IDL.Text,
+  'email' : IDL.Text,
+  'department' : IDL.Text,
 });
 export const AccountStatus = IDL.Variant({
   'active' : IDL.Null,
@@ -126,6 +135,11 @@ export const idlService = IDL.Service({
     ),
   '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+  'adminReviewTask' : IDL.Func(
+      [IDL.Nat, FinalStatus, IDL.Opt(IDL.Text)],
+      [TaskResponse],
+      [],
+    ),
   'approveTask' : IDL.Func([IDL.Nat], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole__1], [], []),
   'createTask' : IDL.Func(
@@ -163,15 +177,12 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'markComplete' : IDL.Func([IDL.Nat], [TaskResponse], []),
   'rejectTask' : IDL.Func([IDL.Nat, IDL.Text], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'toggleUserAccountStatus' : IDL.Func([IDL.Principal, AccountStatus], [], []),
   'updateUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-  'uploadProofFile' : IDL.Func(
-      [IDL.Nat, ExternalBlob, IDL.Text, IDL.Text],
-      [],
-      [],
-    ),
+  'uploadProof' : IDL.Func([IDL.Nat, ExternalBlob], [TaskResponse], []),
 });
 
 export const idlInitArgs = [];
@@ -188,29 +199,10 @@ export const idlFactory = ({ IDL }) => {
     'success' : IDL.Opt(IDL.Bool),
     'topped_up_amount' : IDL.Opt(IDL.Nat),
   });
-  const UserRole__1 = IDL.Variant({
-    'admin' : IDL.Null,
-    'user' : IDL.Null,
-    'guest' : IDL.Null,
-  });
-  const Department = IDL.Variant({
-    'construction' : IDL.Null,
-    'marketing' : IDL.Null,
-    'accounts' : IDL.Null,
-    'travelDesk' : IDL.Null,
-    'apartments' : IDL.Null,
-  });
-  const Time = IDL.Int;
-  const TaskPriority = IDL.Variant({
-    'low' : IDL.Null,
-    'high' : IDL.Null,
-    'medium' : IDL.Null,
-  });
-  const UserSummary = IDL.Record({
-    'principal' : IDL.Principal,
-    'name' : IDL.Text,
-    'email' : IDL.Text,
-    'department' : IDL.Text,
+  const FinalStatus = IDL.Variant({
+    'pendingReview' : IDL.Null,
+    'approved' : IDL.Null,
+    'rejected' : IDL.Null,
   });
   const TaskStatus = IDL.Variant({
     'red' : IDL.Null,
@@ -219,11 +211,24 @@ export const idlFactory = ({ IDL }) => {
     'yellow' : IDL.Null,
   });
   const ExternalBlob = IDL.Vec(IDL.Nat8);
+  const Time = IDL.Int;
   const ApprovalStatus = IDL.Variant({
     'pendingReview' : IDL.Null,
     'pending' : IDL.Null,
     'approved' : IDL.Null,
     'rejected' : IDL.Null,
+  });
+  const TaskPriority = IDL.Variant({
+    'low' : IDL.Null,
+    'high' : IDL.Null,
+    'medium' : IDL.Null,
+  });
+  const Department = IDL.Variant({
+    'construction' : IDL.Null,
+    'marketing' : IDL.Null,
+    'accounts' : IDL.Null,
+    'travelDesk' : IDL.Null,
+    'apartments' : IDL.Null,
   });
   const TaskResponse = IDL.Record({
     'status' : TaskStatus,
@@ -232,16 +237,31 @@ export const idlFactory = ({ IDL }) => {
     'assignedTo' : IDL.Principal,
     'completionTime' : IDL.Opt(Time),
     'submissionTimestamp' : IDL.Opt(Time),
+    'finalStatus' : IDL.Opt(FinalStatus),
     'rejectionReason' : IDL.Opt(IDL.Text),
+    'submittedAt' : IDL.Opt(Time),
     'description' : IDL.Text,
     'performancePoints' : IDL.Int,
+    'reviewComment' : IDL.Opt(IDL.Text),
     'deadline' : Time,
+    'reviewedAt' : IDL.Opt(Time),
     'approvalStatus' : ApprovalStatus,
     'taskId' : IDL.Nat,
     'proofSubmittedBy' : IDL.Opt(IDL.Text),
     'priority' : TaskPriority,
     'proofSubmittedByEmail' : IDL.Opt(IDL.Text),
     'department' : Department,
+  });
+  const UserRole__1 = IDL.Variant({
+    'admin' : IDL.Null,
+    'user' : IDL.Null,
+    'guest' : IDL.Null,
+  });
+  const UserSummary = IDL.Record({
+    'principal' : IDL.Principal,
+    'name' : IDL.Text,
+    'email' : IDL.Text,
+    'department' : IDL.Text,
   });
   const AccountStatus = IDL.Variant({
     'active' : IDL.Null,
@@ -295,6 +315,11 @@ export const idlFactory = ({ IDL }) => {
       ),
     '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+    'adminReviewTask' : IDL.Func(
+        [IDL.Nat, FinalStatus, IDL.Opt(IDL.Text)],
+        [TaskResponse],
+        [],
+      ),
     'approveTask' : IDL.Func([IDL.Nat], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole__1], [], []),
     'createTask' : IDL.Func(
@@ -332,6 +357,7 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'markComplete' : IDL.Func([IDL.Nat], [TaskResponse], []),
     'rejectTask' : IDL.Func([IDL.Nat, IDL.Text], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'toggleUserAccountStatus' : IDL.Func(
@@ -340,11 +366,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'updateUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-    'uploadProofFile' : IDL.Func(
-        [IDL.Nat, ExternalBlob, IDL.Text, IDL.Text],
-        [],
-        [],
-      ),
+    'uploadProof' : IDL.Func([IDL.Nat, ExternalBlob], [TaskResponse], []),
   });
 };
 

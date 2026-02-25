@@ -1,70 +1,83 @@
-import { Card, CardContent } from '@/components/ui/card';
-import { Users, UserCheck, Briefcase, UserCog } from 'lucide-react';
-import { UserStats, AccountStatus, UserRole } from '../backend';
+import React from 'react';
+import { Users, UserCheck, Briefcase, User } from 'lucide-react';
+import { UserStats, UserRole } from '../backend';
 
 interface UsersSummaryCardsProps {
-  users: UserStats[];
+  usersStats: UserStats[];
 }
 
-export default function UsersSummaryCards({ users }: UsersSummaryCardsProps) {
-  const totalUsers = users.length;
-  const totalActive = users.filter((u) => u.profile.accountStatus === AccountStatus.active).length;
-  const totalManagers = users.filter((u) => u.profile.role === UserRole.manager).length;
-  const totalEmployees = users.filter((u) => u.profile.role === UserRole.employee).length;
+function getRoleKey(role: unknown): string {
+  if (typeof role === 'string') return role;
+  if (typeof role === 'object' && role !== null) return Object.keys(role)[0];
+  return String(role);
+}
 
-  const stats = [
-    {
-      label: 'Total Users',
-      value: totalUsers,
-      icon: Users,
-      color: 'text-task-blue',
-      bg: 'bg-task-blue-bg',
-      border: 'border-task-blue/20',
-    },
-    {
-      label: 'Active Users',
-      value: totalActive,
-      icon: UserCheck,
-      color: 'text-task-green',
-      bg: 'bg-task-green-bg',
-      border: 'border-task-green/20',
-    },
-    {
-      label: 'Total Managers',
-      value: totalManagers,
-      icon: UserCog,
-      color: 'text-brand-green',
-      bg: 'bg-brand-green-muted',
-      border: 'border-brand-green/20',
-    },
-    {
-      label: 'Total Employees',
-      value: totalEmployees,
-      icon: Briefcase,
-      color: 'text-task-yellow',
-      bg: 'bg-task-yellow-bg',
-      border: 'border-task-yellow/20',
-    },
-  ];
+function getStatusKey(status: unknown): string {
+  if (typeof status === 'string') return status;
+  if (typeof status === 'object' && status !== null) return Object.keys(status)[0];
+  return String(status);
+}
+
+function StatCard({
+  icon,
+  label,
+  value,
+  colorClass,
+  bgClass,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+  colorClass: string;
+  bgClass: string;
+}) {
+  return (
+    <div className="bg-white rounded-lg shadow-card p-5 flex items-center gap-4">
+      <div className={`p-3 rounded-full ${bgClass}`}>{icon}</div>
+      <div>
+        <p className={`text-3xl font-bold ${colorClass}`}>{value}</p>
+        <p className="text-sm text-gray-500 mt-0.5">{label}</p>
+      </div>
+    </div>
+  );
+}
+
+export default function UsersSummaryCards({ usersStats }: UsersSummaryCardsProps) {
+  const total = usersStats.length;
+  const active = usersStats.filter((u) => getStatusKey(u.profile.accountStatus) === 'active').length;
+  const managers = usersStats.filter((u) => getRoleKey(u.profile.role) === UserRole.manager).length;
+  const employees = usersStats.filter((u) => getRoleKey(u.profile.role) === UserRole.employee).length;
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      {stats.map((stat) => {
-        const Icon = stat.icon;
-        return (
-          <Card key={stat.label} className={`shadow-card border ${stat.border}`}>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
-                <div className={`p-2 rounded-lg ${stat.bg}`}>
-                  <Icon className={`w-4 h-4 ${stat.color}`} />
-                </div>
-              </div>
-              <p className={`text-3xl font-bold ${stat.color}`}>{stat.value}</p>
-            </CardContent>
-          </Card>
-        );
-      })}
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <StatCard
+        icon={<Users className="w-6 h-6 text-white" />}
+        label="Total Users"
+        value={total}
+        colorClass="text-brand-green"
+        bgClass="bg-brand-green"
+      />
+      <StatCard
+        icon={<UserCheck className="w-6 h-6 text-white" />}
+        label="Active Users"
+        value={active}
+        colorClass="text-task-green"
+        bgClass="bg-task-green"
+      />
+      <StatCard
+        icon={<Briefcase className="w-6 h-6 text-white" />}
+        label="Managers"
+        value={managers}
+        colorClass="text-task-blue"
+        bgClass="bg-task-blue"
+      />
+      <StatCard
+        icon={<User className="w-6 h-6 text-white" />}
+        label="Employees"
+        value={employees}
+        colorClass="text-task-yellow"
+        bgClass="bg-task-yellow"
+      />
     </div>
   );
 }

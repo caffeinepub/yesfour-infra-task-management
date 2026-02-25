@@ -1,77 +1,76 @@
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Skeleton } from '@/components/ui/skeleton';
 import SummaryStatsCards from '../components/SummaryStatsCards';
 import LeaderboardTable from '../components/LeaderboardTable';
 import GlobalTaskList from '../components/GlobalTaskList';
-import UsersListPage from './UsersListPage';
 import { useGetAdminDashboard, useGetAllTasks } from '../hooks/useQueries';
-import { Loader2 } from 'lucide-react';
-import { Principal } from '@dfinity/principal';
+import { useInternetIdentity } from '../hooks/useInternetIdentity';
+import UsersListPage from './UsersListPage';
 
 export default function AdminDashboard() {
-  const { data: dashboardData, isLoading: dashboardLoading } = useGetAdminDashboard();
-  const { data: allTasks, isLoading: tasksLoading } = useGetAllTasks();
+  const { identity } = useInternetIdentity();
+  const { data: dashboard, isLoading: dashboardLoading } = useGetAdminDashboard();
+  const { data: allTasks = [], isLoading: tasksLoading } = useGetAllTasks();
 
-  const leaderboard: Array<[Principal, bigint]> =
-    dashboardData?.leaderboard.map(([p, pts]) => [p as Principal, pts]) ?? [];
+  const currentUserPrincipal = identity?.getPrincipal().toString();
+
+  if (dashboardLoading) {
+    return (
+      <div className="p-6 space-y-4">
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+
+  const totalTasks = Number(dashboard?.totalTasks ?? 0);
+  const completedTasks = Number(dashboard?.completedTasks ?? 0);
+  const lateTasks = Number(dashboard?.lateTasks ?? 0);
+  const leaderboard = dashboard?.leaderboard ?? [];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+    <div className="p-4 md:p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
         <p className="text-gray-500 text-sm mt-1">Overview of all tasks and team performance</p>
       </div>
 
-      {/* Summary Stats */}
-      {dashboardLoading ? (
-        <div className="flex items-center gap-2 text-gray-400">
-          <Loader2 className="w-5 h-5 animate-spin" />
-          <span className="text-sm">Loading stats...</span>
-        </div>
-      ) : dashboardData ? (
-        <SummaryStatsCards
-          totalTasks={Number(dashboardData.totalTasks)}
-          completedTasks={Number(dashboardData.completedTasks)}
-          lateTasks={Number(dashboardData.lateTasks)}
-        />
-      ) : null}
+      <SummaryStatsCards
+        totalTasks={totalTasks}
+        completedTasks={completedTasks}
+        lateTasks={lateTasks}
+        allTasks={allTasks}
+      />
 
-      {/* Tabs */}
-      <Tabs defaultValue="overview">
-        <TabsList className="bg-gray-100">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
+      <Tabs defaultValue="tasks">
+        <TabsList className="mb-4">
           <TabsTrigger value="tasks">All Tasks</TabsTrigger>
+          <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="mt-6">
-          <div className="space-y-6">
-            <h2 className="text-lg font-semibold text-gray-800">Team Leaderboard</h2>
-            <LeaderboardTable leaderboard={leaderboard} />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="leaderboard" className="mt-6">
-          <LeaderboardTable leaderboard={leaderboard} />
-        </TabsContent>
-
-        <TabsContent value="tasks" className="mt-6">
+        <TabsContent value="tasks">
           {tasksLoading ? (
-            <div className="flex items-center gap-2 text-gray-400 py-8">
-              <Loader2 className="w-5 h-5 animate-spin" />
-              <span className="text-sm">Loading tasks...</span>
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-32 w-full" />
+              ))}
             </div>
           ) : (
             <GlobalTaskList
-              tasks={allTasks ?? []}
+              tasks={allTasks}
               isAdminView={true}
-              showApprovalActions={false}
+              currentUserPrincipal={currentUserPrincipal}
             />
           )}
         </TabsContent>
 
-        <TabsContent value="users" className="mt-6">
+        <TabsContent value="leaderboard">
+          <LeaderboardTable leaderboard={leaderboard} />
+        </TabsContent>
+
+        <TabsContent value="users">
           <UsersListPage />
         </TabsContent>
       </Tabs>

@@ -1,59 +1,50 @@
 import { useInternetIdentity } from './useInternetIdentity';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useActor } from './useActor';
-import { UserProfile, UserRole } from '../backend';
+import { useGetCallerUserProfile } from './useQueries';
+import { useQueryClient } from '@tanstack/react-query';
+import { UserRole } from '../backend';
 
-export function useGetCallerUserProfile() {
-  const { actor, isFetching: actorFetching } = useActor();
-
-  const query = useQuery<UserProfile | null>({
-    queryKey: ['currentUserProfile'],
-    queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.getCallerUserProfile();
-    },
-    enabled: !!actor && !actorFetching,
-    retry: false,
-  });
-
-  return {
-    ...query,
-    isLoading: actorFetching || query.isLoading,
-    isFetched: !!actor && query.isFetched,
-  };
+function getRoleKey(role: unknown): string {
+  if (typeof role === 'string') return role;
+  if (typeof role === 'object' && role !== null) return Object.keys(role)[0];
+  return '';
 }
 
 export function useAuth() {
-  const { identity, login, clear, loginStatus, isInitializing, isLoggingIn } = useInternetIdentity();
+  const { identity, clear, loginStatus } = useInternetIdentity();
   const queryClient = useQueryClient();
-  const { data: userProfile, isLoading: profileLoading, isFetched } = useGetCallerUserProfile();
+  const {
+    data: userProfile,
+    isLoading: profileLoading,
+    isFetched: profileFetched,
+  } = useGetCallerUserProfile();
 
   const isAuthenticated = !!identity;
-  const isAdmin = userProfile?.role === UserRole.admin;
-  const isManager = userProfile?.role === UserRole.manager;
-  const isEmployee = userProfile?.role === UserRole.employee;
+  const isLoggingIn = loginStatus === 'logging-in';
+
+  const roleKey = userProfile ? getRoleKey(userProfile.role) : '';
+  const isAdmin = roleKey === UserRole.admin;
+  const isManager = roleKey === UserRole.manager;
+  const isEmployee = roleKey === UserRole.employee;
+
+  const showProfileSetup =
+    isAuthenticated && !profileLoading && profileFetched && userProfile === null;
 
   const logout = async () => {
     await clear();
     queryClient.clear();
   };
 
-  const showProfileSetup = isAuthenticated && !profileLoading && isFetched && userProfile === null;
-
   return {
     identity,
     isAuthenticated,
+    isLoggingIn,
+    userProfile,
+    profileLoading,
+    profileFetched,
     isAdmin,
     isManager,
     isEmployee,
-    userProfile,
-    profileLoading,
-    isFetched,
     showProfileSetup,
-    login,
     logout,
-    loginStatus,
-    isInitializing,
-    isLoggingIn,
   };
 }

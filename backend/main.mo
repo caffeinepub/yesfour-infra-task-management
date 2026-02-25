@@ -3,9 +3,9 @@ import Map "mo:core/Map";
 import List "mo:core/List";
 import Iter "mo:core/Iter";
 import Int "mo:core/Int";
-import Time "mo:core/Time";
-import Array "mo:core/Array";
 import Order "mo:core/Order";
+import Array "mo:core/Array";
+import Time "mo:core/Time";
 import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
 import MixinStorage "blob-storage/Mixin";
@@ -46,8 +46,6 @@ actor {
 
   let userProfiles = Map.empty<Principal, UserProfile>();
 
-  // Helper: returns true if the caller is an admin OR is a registered user
-  // whose profile role is #admin or #manager.
   func isAdminOrManager(caller : Principal) : Bool {
     if (AccessControl.isAdmin(accessControlState, caller)) {
       return true;
@@ -208,7 +206,12 @@ actor {
     #pendingReview;
   };
 
-  // Task as persisted in backend (internal)
+  type FinalStatus = {
+    #pendingReview;
+    #approved;
+    #rejected;
+  };
+
   type Task = {
     taskId : Nat;
     title : Text;
@@ -226,6 +229,10 @@ actor {
     rejectionReason : ?Text;
     completionTime : ?Time.Time;
     performancePoints : Int;
+    submittedAt : ?Time.Time;
+    reviewedAt : ?Time.Time;
+    reviewComment : ?Text;
+    finalStatus : ?FinalStatus;
   };
 
   // Task as returned to frontend (filtered)
@@ -246,6 +253,10 @@ actor {
     rejectionReason : ?Text;
     completionTime : ?Time.Time;
     performancePoints : Int;
+    submittedAt : ?Time.Time;
+    reviewedAt : ?Time.Time;
+    reviewComment : ?Text;
+    finalStatus : ?FinalStatus;
   };
 
   func compareByDeadline(task1 : TaskResponse, task2 : TaskResponse) : Order.Order {
@@ -291,6 +302,10 @@ actor {
       proofSubmittedBy = if (allowProofFields) { task.proofSubmittedBy } else { null };
       proofSubmittedByEmail = if (allowProofFields) { task.proofSubmittedByEmail } else { null };
       submissionTimestamp = if (allowProofFields) { task.submissionTimestamp } else { null };
+      submittedAt = if (allowProofFields) { task.submittedAt } else { null };
+      reviewedAt = if (allowProofFields) { task.reviewedAt } else { null };
+      reviewComment = if (allowProofFields) { task.reviewComment } else { null };
+      finalStatus = if (allowProofFields) { task.finalStatus } else { null };
     };
   };
 
@@ -330,6 +345,10 @@ actor {
       rejectionReason = null;
       completionTime = null;
       performancePoints = 0;
+      submittedAt = null;
+      reviewedAt = null;
+      reviewComment = null;
+      finalStatus = null;
     };
 
     tasks.add(taskId, newTask);
@@ -352,13 +371,14 @@ actor {
     Runtime.trap("User with this email does not exist.");
   };
 
-  /// Upload proof for a task. Only the assigned employee can upload proof.
-  public shared ({ caller }) func uploadProofFile(
+  /// Upload proof for a task.
+  /// Only the assigned employee (caller == assignedTo) may call this.
+  /// The caller must also be a registered user (#user permission).
+  public shared ({ caller }) func uploadProof(
     taskId : Nat,
     file : Storage.ExternalBlob,
-    submittedByName : Text,
-    submittedByEmail : Text,
-  ) : async () {
+  ) : async TaskResponse {
+    // Must be a registered user
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only registered users can upload proof");
     };
@@ -366,24 +386,148 @@ actor {
     switch (tasks.get(taskId)) {
       case (null) { Runtime.trap("Task not found") };
       case (?task) {
+        // Must be the assigned employee
         if (task.assignedTo != caller) {
           Runtime.trap("Unauthorized: Only the assigned employee can upload proof");
         };
+
         let checkedTask = applyDeadlineCheck(task);
         if (checkedTask.status == #red) {
           tasks.add(taskId, checkedTask);
           Runtime.trap("Task deadline has passed; proof upload not allowed");
         };
+
         let updatedTask : Task = {
           checkedTask with
           proofFile = ?file;
-          proofSubmittedBy = ?submittedByName;
-          proofSubmittedByEmail = ?submittedByEmail;
-          submissionTimestamp = ?Time.now();
           status = #blue;
           approvalStatus = #pendingReview;
+          submittedAt = ?Time.now();
         };
         tasks.add(taskId, updatedTask);
+        toTaskResponse(updatedTask, caller);
+      };
+    };
+  };
+
+  /// Mark a task as complete (employee's final confirmation after proof upload).
+  /// Only the assigned employee (caller == assignedTo) may call this.
+  /// The caller must also be a registered user (#user permission).
+  /// The task must already have a proofFile uploaded.
+  public shared ({ caller }) func markComplete(
+    taskId : Nat,
+  ) : async TaskResponse {
+    // Must be a registered user
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only registered users can mark complete");
+    };
+
+    switch (tasks.get(taskId)) {
+      case (null) { Runtime.trap("Task not found") };
+      case (?task) {
+        // Must be the assigned employee
+        if (task.assignedTo != caller) {
+          Runtime.trap("Unauthorized: Only the assigned employee can mark complete");
+        };
+
+        // Proof must have been uploaded first
+        switch (task.proofFile) {
+          case (null) { Runtime.trap("You must upload proof first") };
+          case (?_) {};
+        };
+
+        let now = Time.now();
+        let updatedTask : Task = {
+          task with
+          status = #blue;
+          approvalStatus = #pendingReview;
+          // Only set submittedAt if not already set by uploadProof
+          submittedAt = switch (task.submittedAt) {
+            case (?existing) { ?existing };
+            case (null) { ?now };
+          };
+        };
+        tasks.add(taskId, updatedTask);
+        toTaskResponse(updatedTask, caller);
+      };
+    };
+  };
+
+  /// Admin review of a task: approve or reject.
+  /// Only admins may call this function.
+  /// Rejection requires a non-empty reviewComment.
+  public shared ({ caller }) func adminReviewTask(
+    taskId : Nat,
+    decision : FinalStatus,
+    reviewComment : ?Text,
+  ) : async TaskResponse {
+    // Must be an admin
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can review tasks");
+    };
+
+    switch (tasks.get(taskId)) {
+      case (null) { Runtime.trap("Task not found") };
+      case (?task) {
+        switch (decision) {
+          case (#approved) {
+            let now = Time.now();
+            let points : Int = if (now <= task.deadline) { 10 } else { -5 };
+            let updatedTask : Task = {
+              task with
+              status = #green;
+              approvalStatus = #approved;
+              completionTime = ?now;
+              performancePoints = points;
+              reviewedAt = ?now;
+              reviewComment = null;
+              finalStatus = ?#approved;
+            };
+
+            tasks.add(taskId, updatedTask);
+
+            // Award performance points to the assigned employee's profile
+            switch (userProfiles.get(task.assignedTo)) {
+              case (null) {};
+              case (?profile) {
+                let updatedProfile : UserProfile = {
+                  profile with
+                  performancePoints = profile.performancePoints + points;
+                };
+                userProfiles.add(task.assignedTo, updatedProfile);
+              };
+            };
+          };
+          case (#rejected) {
+            // Rejection requires a non-empty review comment
+            let comment = switch (reviewComment) {
+              case (null) {
+                Runtime.trap("Rejection requires a non-empty review comment")
+              };
+              case (?c) {
+                if (c.size() == 0) {
+                  Runtime.trap("Rejection requires a non-empty review comment")
+                };
+                c
+              };
+            };
+            let now = Time.now();
+            let updatedTask : Task = {
+              task with
+              status = #yellow;
+              approvalStatus = #rejected;
+              reviewedAt = ?now;
+              reviewComment = ?comment;
+              finalStatus = ?#rejected;
+            };
+            tasks.add(taskId, updatedTask);
+          };
+          case (#pendingReview) {
+            // #pendingReview is not a valid admin decision
+            Runtime.trap("Invalid decision: use #approved or #rejected");
+          };
+        };
+        toTaskResponse(tasks.get(taskId).unwrap(), caller);
       };
     };
   };
