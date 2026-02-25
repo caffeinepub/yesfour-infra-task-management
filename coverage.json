@@ -1,0 +1,135 @@
+{
+  "kind": "coverage_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-25T10:41:07.356Z",
+  "sources": {
+    "buildRequest": true,
+    "implementationPlan": true
+  },
+  "requirements": {
+    "total": 8,
+    "implemented": 6,
+    "items": [
+      {
+        "id": "REQ-12",
+        "summary": "Add a backend query in the Motoko actor that returns a list of all registered users with aggregated statistics: total tasks assigned, total tasks completed (Green status), and sum of performance points. This endpoint must be accessible only by principals with the Admin role; any other caller must receive an authorization error. The response must never include password or credential data.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-13",
+        "summary": "Add backend mutations in the Motoko actor for admin user management: (1) update a user's role (Admin / Manager / Employee), (2) toggle a user's account status (Active / Inactive), and (3) delete a user record. All three mutations must be restricted to Admin principals only.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-14",
+        "summary": "Add a 'Users' menu item to the Admin Dashboard sidebar navigation that is visible only when the authenticated user has the Admin role. The item must be completely hidden for Manager and Employee roles. Clicking it navigates to the Users List page within the Admin Dashboard.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/App.tsx",
+          "frontend/src/pages/AdminDashboard.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/AdminDashboard.tsx"
+        ]
+      },
+      {
+        "id": "REQ-15",
+        "summary": "Create a Users List page inside the Admin Dashboard that displays all registered users in a paginated table. The table must include the following columns: Serial Number, Full Name, Email, Role, Department, Total Tasks Assigned, Tasks Completed, Performance Points, and Account Status (Active / Inactive). Pagination shows 10 users per page.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/UsersListPage.tsx",
+          "frontend/src/components/UserAccountStatusBadge.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/UsersListPage.tsx",
+          "frontend/src/components/UserAccountStatusBadge.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ]
+      },
+      {
+        "id": "REQ-16",
+        "summary": "Add admin action controls to each row in the Users List table: an Edit Role button that opens an inline selector or modal to change the user's role; an Activate/Deactivate toggle button that switches the user's account status; and a Delete button that shows a confirmation popup before permanently removing the user.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/EditUserRoleModal.tsx",
+          "frontend/src/components/DeleteUserConfirmDialog.tsx",
+          "frontend/src/pages/UsersListPage.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/EditUserRoleModal.tsx",
+          "frontend/src/components/DeleteUserConfirmDialog.tsx",
+          "frontend/src/pages/UsersListPage.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ]
+      },
+      {
+        "id": "REQ-17",
+        "summary": "Add search and filter controls above the Users List table: a text search input that filters users by Full Name or Email; a Role filter dropdown (All / Admin / Manager / Employee); and a Department filter dropdown populated with the existing department values used in the app. All filters apply client-side or trigger a re-fetch and reset pagination to page 1 when changed.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/UsersListPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/UsersListPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-18",
+        "summary": "Add a summary analytics strip at the top of the Users List page showing four stat cards: Total Users, Total Active Users, Total Managers, and Total Employees. These values are derived from the same user list data already fetched for the table.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/UsersSummaryCards.tsx",
+          "frontend/src/pages/UsersListPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/UsersSummaryCards.tsx",
+          "frontend/src/pages/UsersListPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-19",
+        "summary": "Ensure the Users List page and all its controls are styled with the existing Yesfour Infra corporate theme: white backgrounds, green (#2E7D32) primary accent, subtle grey borders, clean sans-serif typography, and card-based layouts. The page must be responsive and must not introduce any chat or messaging UI elements.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/UsersListPage.tsx",
+          "frontend/src/components/UserAccountStatusBadge.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/UsersListPage.tsx",
+          "frontend/src/components/UserAccountStatusBadge.tsx"
+        ]
+      }
+    ]
+  },
+  "changedFiles": [
+    "backend/main.mo",
+    "backend/migration.mo",
+    "build-request.json",
+    "build-template/README.md",
+    "feature_evidence.json",
+    "frontend-file-summaries.txt",
+    "frontend-implementation-plan.json",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/components/DeleteUserConfirmDialog.tsx",
+    "frontend/src/components/EditUserRoleModal.tsx",
+    "frontend/src/components/UserAccountStatusBadge.tsx",
+    "frontend/src/components/UsersSummaryCards.tsx",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/pages/AdminDashboard.tsx",
+    "frontend/src/pages/ProfileSetupPage.tsx",
+    "frontend/src/pages/UsersListPage.tsx",
+    "project_state.json",
+    "scratch/component-selection.json",
+    "spec.md",
+    "spec_vs_diff_report.json"
+  ]
+}

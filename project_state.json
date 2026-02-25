@@ -1,0 +1,239 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 5,
+  "summary": "Full-stack internal task management web app for Yesfour Infra (real estate & construction). React + Node.js/Express + MongoDB + JWT auth. Strict productivity workflow: Assign → Work → Upload Proof → Approve. Three roles: Admin, Manager, Employee. Status color system (Red/Yellow/Blue/Green), performance points, department filtering, file uploads via Multer, real-time task status notifications via Socket.io (no chat).",
+  "architectural_notes": [
+    "Tech stack: React frontend, Node.js/Express backend, MongoDB database, JWT auth, Multer file storage, Socket.io for real-time notifications",
+    "UI theme: white + green corporate minimal design; status colors Red/Yellow/Blue/Green must be clearly visible",
+    "Departments: Construction, Marketing, Travel Desk, Accounts, Apartments",
+    "No chat, no email integration, no discussion features — strictly task workflow only"
+  ],
+  "known_issues": [],
+  "isFixRequest": false,
+  "existing_features": [
+    {
+      "id": "feature-implement-jwt-based-authentication-with-three-roles-admin-manager-and-employee-provide-a-login-page-that-accepts-credentials-and-returns-a-signed-jwt-protect-all-routes-based-on-role-store-user-role-name-department-and-performance-points-in-the-user-model",
+      "title": "Implement JWT-based authentication with three roles: Admin, Manager, and Employee. Provide a login page that accepts credentials and returns a signed JWT. Protect all routes based on role. Store user role, name, department, and performance points in the user model.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-real-time-task-status-change-notifications-using-socket-io-when-a-task-s-status-changes-yellow-blue-green-red-yellow-broadcast-a-notification-event-containing-taskid-new-status-and-task-title-to-the-relevant-connected-clients-no-chat-rooms-no-messaging-channels-no-direct-messages-only-status-change-events",
+      "title": "Implement real-time task status change notifications using Socket.io. When a task's status changes (Yellow → Blue → Green / Red / Yellow), broadcast a notification event containing taskId, new status, and task title to the relevant connected clients. No chat rooms, no messaging channels, no direct messages — only status-change events.",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-the-employee-dashboard-display-only-tasks-assigned-to-the-logged-in-employee-for-each-task-show-title-department-priority-current-status-colour-coded-badge-deadline-with-a-live-countdown-timer-proof-upload-button-visible-when-status-is-yellow-or-red-and-approvalstatus-provide-no-chat-email-or-discussion-ui-elements-anywhere-on-this-view",
+      "title": "Build the Employee Dashboard. Display only tasks assigned to the logged-in employee. For each task show: title, department, priority, current status (colour-coded badge), deadline with a live countdown timer, proof upload button (visible when status is Yellow or Red), and approvalStatus. Provide no chat, email, or discussion UI elements anywhere on this view.",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-the-manager-dashboard-include-a-form-to-create-and-assign-new-tasks-title-department-assignedto-description-deadline-priority-a-list-of-tasks-filtered-by-the-manager-s-department-approve-and-reject-actions-on-tasks-with-status-blue-a-rejection-modal-requiring-a-rejectionreason-text-input-before-submission-a-department-productivity-summary-showing-task-counts-by-status-and-total-employee-performance-points",
+      "title": "Build the Manager Dashboard. Include: a form to create and assign new tasks (title, department, assignedTo, description, deadline, priority); a list of tasks filtered by the manager's department; approve and reject actions on tasks with status Blue; a rejection modal requiring a rejectionReason text input before submission; a department productivity summary showing task counts by status and total employee performance points.",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-the-admin-dashboard-display-total-task-count-completed-green-task-count-late-red-task-count-and-a-monthly-leaderboard-table-ranking-all-employees-by-performance-points-descending-data-is-fetched-from-get-dashboard-admin-include-a-global-task-list-view-with-filtering-by-department-status-and-priority",
+      "title": "Build the Admin Dashboard. Display: total task count, completed (Green) task count, late (Red) task count, and a monthly leaderboard table ranking all employees by performance points descending. Data is fetched from GET /dashboard/admin. Include a global task list view with filtering by department, status, and priority.",
+      "reqIds": [
+        "REQ-9"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-apply-a-clean-corporate-visual-theme-throughout-the-entire-application-white-backgrounds-a-primary-green-accent-colour-2e7d32-or-similar-subtle-grey-borders-and-dividers-clean-sans-serif-typography-and-high-contrast-status-badges-red-d32f2f-yellow-f9a825-blue-1565c0-green-2e7d32-maintain-consistent-spacing-card-based-layouts-and-no-decorative-clutter-the-yesfour-infra-company-name-and-logo-area-should-appear-in-the-top-navigation-bar",
+      "title": "Apply a clean, corporate visual theme throughout the entire application: white backgrounds, a primary green accent colour (#2E7D32 or similar), subtle grey borders and dividers, clean sans-serif typography, and high-contrast status badges (Red = #D32F2F, Yellow = #F9A825, Blue = #1565C0, Green = #2E7D32). Maintain consistent spacing, card-based layouts, and no decorative clutter. The Yesfour Infra company name and logo area should appear in the top navigation bar.",
+      "reqIds": [
+        "REQ-10"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-generate-a-company-logo-image-for-yesfour-infra-a-minimal-corporate-mark-combining-a-building-construction-silhouette-motif-with-clean-lettering-to-be-used-in-the-top-navigation-bar",
+      "title": "Generate a company logo image for Yesfour Infra — a minimal, corporate mark combining a building/construction silhouette motif with clean lettering — to be used in the top navigation bar.",
+      "reqIds": [
+        "REQ-11"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-users-menu-item-to-the-admin-dashboard-sidebar-navigation-that-is-visible-only-when-the-authenticated-user-has-the-admin-role-the-item-must-be-completely-hidden-for-manager-and-employee-roles-clicking-it-navigates-to-the-users-list-page-within-the-admin-dashboard",
+      "title": "Add a 'Users' menu item to the Admin Dashboard sidebar navigation that is visible only when the authenticated user has the Admin role. The item must be completely hidden for Manager and Employee roles. Clicking it navigates to the Users List page within the Admin Dashboard.",
+      "reqIds": [
+        "REQ-14"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-users-list-page-inside-the-admin-dashboard-that-displays-all-registered-users-in-a-paginated-table-the-table-must-include-the-following-columns-serial-number-full-name-email-role-department-total-tasks-assigned-tasks-completed-performance-points-and-account-status-active-inactive-pagination-shows-10-users-per-page",
+      "title": "Create a Users List page inside the Admin Dashboard that displays all registered users in a paginated table. The table must include the following columns: Serial Number, Full Name, Email, Role, Department, Total Tasks Assigned, Tasks Completed, Performance Points, and Account Status (Active / Inactive). Pagination shows 10 users per page.",
+      "reqIds": [
+        "REQ-15"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-admin-action-controls-to-each-row-in-the-users-list-table-an-edit-role-button-that-opens-an-inline-selector-or-modal-to-change-the-user-s-role-an-activate-deactivate-toggle-button-that-switches-the-user-s-account-status-and-a-delete-button-that-shows-a-confirmation-popup-before-permanently-removing-the-user",
+      "title": "Add admin action controls to each row in the Users List table: an Edit Role button that opens an inline selector or modal to change the user's role; an Activate/Deactivate toggle button that switches the user's account status; and a Delete button that shows a confirmation popup before permanently removing the user.",
+      "reqIds": [
+        "REQ-16"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-search-and-filter-controls-above-the-users-list-table-a-text-search-input-that-filters-users-by-full-name-or-email-a-role-filter-dropdown-all-admin-manager-employee-and-a-department-filter-dropdown-populated-with-the-existing-department-values-used-in-the-app-all-filters-apply-client-side-or-trigger-a-re-fetch-and-reset-pagination-to-page-1-when-changed",
+      "title": "Add search and filter controls above the Users List table: a text search input that filters users by Full Name or Email; a Role filter dropdown (All / Admin / Manager / Employee); and a Department filter dropdown populated with the existing department values used in the app. All filters apply client-side or trigger a re-fetch and reset pagination to page 1 when changed.",
+      "reqIds": [
+        "REQ-17"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-summary-analytics-strip-at-the-top-of-the-users-list-page-showing-four-stat-cards-total-users-total-active-users-total-managers-and-total-employees-these-values-are-derived-from-the-same-user-list-data-already-fetched-for-the-table",
+      "title": "Add a summary analytics strip at the top of the Users List page showing four stat cards: Total Users, Total Active Users, Total Managers, and Total Employees. These values are derived from the same user list data already fetched for the table.",
+      "reqIds": [
+        "REQ-18"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-users-list-page-and-all-its-controls-are-styled-with-the-existing-yesfour-infra-corporate-theme-white-backgrounds-green-2e7d32-primary-accent-subtle-grey-borders-clean-sans-serif-typography-and-card-based-layouts-the-page-must-be-responsive-and-must-not-introduce-any-chat-or-messaging-ui-elements",
+      "title": "Ensure the Users List page and all its controls are styled with the existing Yesfour Infra corporate theme: white backgrounds, green (#2E7D32) primary accent, subtle grey borders, clean sans-serif typography, and card-based layouts. The page must be responsive and must not introduce any chat or messaging UI elements.",
+      "reqIds": [
+        "REQ-19"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "JWT-based authentication with Admin, Manager, and Employee roles",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Task model with full MongoDB schema (taskId, title, department, assignedTo, description, deadline, priority, status, proofFile, approvalStatus, rejectionReason, completionTime, performancePoints)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Workflow rules: Yellow on create, Blue on proof upload, Green on approve, Yellow on reject, Red if deadline passed",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "REST API endpoints: POST /login, POST /tasks, GET /tasks/user/:id, PUT /tasks/upload-proof/:id, PUT /tasks/approve/:id, PUT /tasks/reject/:id, GET /dashboard/admin",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Employee dashboard: assigned tasks only, deadline countdown timer, upload proof button, no chat",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Manager dashboard: assign tasks, approve/reject proof, view department productivity",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-7",
+      "summary": "Admin dashboard: total/completed/late tasks stats and monthly leaderboard",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-8",
+      "summary": "Productivity/points system: +10 on-time completion, -5 late completion, stored per employee",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-9",
+      "summary": "File upload via Multer for proof (images/PDFs stored locally)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-10",
+      "summary": "Real-time task status change notifications via Socket.io (no chat functionality)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-12",
+      "summary": "Implement the Task data model in the Motoko backend with all required fields: taskId (auto-generated), title, department (one of: Construction, Marketing, Travel Desk, Accounts, Apartments), assignedTo (user reference), description, deadline (timestamp), priority (High / Medium / Low), status (Red / Yellow / Blue / Green), proofFile (file path string), approvalStatus (Pending / Approved / Rejected), rejectionReason (optional text), completionTime (timestamp), performancePoints (number).",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-13",
+      "summary": "Enforce workflow state-transition rules on the backend: task created → status = Yellow; employee uploads proof → status = Blue; approved by manager → status = Green, award +10 performance points to the assigned employee if deadline not passed, or -5 points if deadline was passed; rejected by manager → status = Yellow; if current time exceeds deadline and task is not Green → auto-set status = Red. Run the deadline check on each task fetch and also on a periodic interval.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-14",
+      "summary": "Expose the following REST API endpoints: POST /login, POST /tasks (manager/admin only), GET /tasks/user/:id (employee sees own tasks), PUT /tasks/upload-proof/:id (employee uploads image or PDF via Multer), PUT /tasks/approve/:id (manager/admin), PUT /tasks/reject/:id (manager/admin, requires rejectionReason body field), GET /dashboard/admin (aggregate stats: total tasks, completed tasks, late tasks, monthly leaderboard of employees by performance points).",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-15",
+      "summary": "Implement file upload using Multer. Accepted file types: JPEG, PNG, PDF. Store uploaded files locally under a designated uploads directory. Return the stored file path in the task record's proofFile field.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-16",
+      "summary": "Admin-only Users List section: sidebar menu item, table view (name, email, role, department, tasks assigned, tasks completed, performance points, account status), edit role, activate/deactivate, delete with confirmation, search by name/email, filter by role/department, pagination (10/page), GET /admin/users endpoint with JWT + admin-only access, aggregate task stats, never return passwords",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-17",
+      "summary": "Add a backend query in the Motoko actor that returns a list of all registered users with aggregated statistics: total tasks assigned, total tasks completed (Green status), and sum of performance points. This endpoint must be accessible only by principals with the Admin role; any other caller must receive an authorization error. The response must never include password or credential data.",
+      "reqIds": [
+        "REQ-12"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-18",
+      "summary": "Add backend mutations in the Motoko actor for admin user management: (1) update a user's role (Admin / Manager / Employee), (2) toggle a user's account status (Active / Inactive), and (3) delete a user record. All three mutations must be restricted to Admin principals only.",
+      "reqIds": [
+        "REQ-13"
+      ],
+      "status": "pending"
+    }
+  ],
+  "gameProjectType": "none",
+  "projectName": "Yesfour Infra Task Management",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

@@ -1,0 +1,153 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Add Admin-Only Users List Section to Admin Dashboard",
+  "requirements": [
+    {
+      "id": "REQ-14",
+      "summary": "Add 'Users' menu item to Admin Dashboard sidebar navigation visible only to Admin role",
+      "acceptanceCriteria": [
+        "The 'Users' sidebar item appears in the Admin Dashboard navigation when logged in as Admin.",
+        "The 'Users' sidebar item is not rendered at all for Manager or Employee sessions.",
+        "Clicking 'Users' renders the Users List page within the Admin Dashboard without breaking any other dashboard tabs or navigation."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Add a route for /admin/users that renders the UsersListPage component under the protected admin layout, ensuring the route is only accessible when isAdmin is true."
+        },
+        {
+          "path": "frontend/src/pages/AdminDashboard.tsx",
+          "operation": "modify",
+          "description": "Add a 'Users' tab to the existing Tabs navigation that is conditionally rendered only when the current user has the Admin role. Wire the tab to navigate to /admin/users when clicked."
+        }
+      ]
+    },
+    {
+      "id": "REQ-15",
+      "summary": "Create Users List page with paginated table displaying all registered users and their aggregated statistics",
+      "acceptanceCriteria": [
+        "The table renders all columns: Serial Number, Full Name, Email, Role, Department, Total Tasks Assigned, Tasks Completed, Performance Points, Account Status.",
+        "Account Status displays as a styled badge showing 'Active' or 'Inactive'.",
+        "The table paginates at 10 rows per page with previous/next controls.",
+        "Serial numbers are sequential across all pages (i.e., page 2 starts at 11).",
+        "Data is fetched from the admin users backend query and renders correctly."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/UsersListPage.tsx",
+          "operation": "create",
+          "description": "Create the UsersListPage component that fetches all users with statistics using the useGetAllUsersStats hook. Render a paginated table with 10 rows per page showing Serial Number, Full Name, Email, Role, Department, Total Tasks Assigned, Tasks Completed, Performance Points, and Account Status (using a badge component). Include pagination controls that maintain sequential serial numbers across pages."
+        },
+        {
+          "path": "frontend/src/components/UserAccountStatusBadge.tsx",
+          "operation": "create",
+          "description": "Create a reusable badge component that displays Account Status as a styled pill showing 'Active' (green accent) or 'Inactive' (grey), consistent with the existing StatusBadge component pattern and Yesfour Infra corporate theme."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Add a useGetAllUsersStats hook that calls actor.getAllUsersStats() and returns the list of UserStats objects using React Query with appropriate caching, enabled only when the actor is available and the user is authenticated."
+        }
+      ]
+    },
+    {
+      "id": "REQ-16",
+      "summary": "Add admin action controls to each Users List table row for editing role, toggling account status, and deleting users",
+      "acceptanceCriteria": [
+        "Each table row has Edit Role, Activate/Deactivate, and Delete action controls.",
+        "Edit Role opens a modal or inline dropdown allowing selection of Admin, Manager, or Employee; saving calls the update role mutation and refreshes the table.",
+        "Activate/Deactivate button toggles the user's accountStatus and updates the badge in the table without a full page reload.",
+        "Delete button opens a confirmation dialog; confirming calls the delete mutation and removes the row from the table.",
+        "Cancelling the delete confirmation dialog leaves the user record unchanged."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/EditUserRoleModal.tsx",
+          "operation": "create",
+          "description": "Create a modal dialog component that displays a dropdown for selecting a new role (Admin, Manager, Employee) for a given user. On save, call the useUpdateUserRole mutation hook, show a toast notification on success or failure, and close the modal. Use shadcn Dialog and Select components for consistency."
+        },
+        {
+          "path": "frontend/src/components/DeleteUserConfirmDialog.tsx",
+          "operation": "create",
+          "description": "Create a confirmation dialog component using shadcn AlertDialog that displays a warning message with the user's name and confirms the permanent deletion. On confirmation, call the useDeleteUser mutation hook, show a toast notification, and close the dialog. On cancel, close without action."
+        },
+        {
+          "path": "frontend/src/pages/UsersListPage.tsx",
+          "operation": "modify",
+          "description": "Add action buttons to each table row: an Edit Role button that opens the EditUserRoleModal, an Activate/Deactivate toggle button that calls useToggleUserAccountStatus and updates the UI optimistically, and a Delete button that opens the DeleteUserConfirmDialog. Ensure buttons are styled consistently with the Yesfour Infra theme."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Add three mutation hooks: useUpdateUserRole (calls actor.updateUserRole), useToggleUserAccountStatus (calls actor.toggleUserAccountStatus), and useDeleteUser (calls actor.deleteUser). Each mutation should invalidate the 'allUsersStats' query on success and handle authorization errors gracefully with user-facing error messages."
+        }
+      ]
+    },
+    {
+      "id": "REQ-17",
+      "summary": "Add search and filter controls above the Users List table for Full Name/Email, Role, and Department",
+      "acceptanceCriteria": [
+        "A search input filters the table to rows where Full Name or Email contains the entered text (case-insensitive).",
+        "The Role dropdown filters the table to only the selected role; 'All' shows every role.",
+        "The Department dropdown filters the table to only users in the selected department; 'All' shows every department.",
+        "Changing any filter resets the current page back to page 1.",
+        "Filters can be combined (e.g., search + role + department applied simultaneously)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/UsersListPage.tsx",
+          "operation": "modify",
+          "description": "Add filter controls above the table: a search Input for Full Name or Email, a Select dropdown for Role (All/Admin/Manager/Employee), and a Select dropdown for Department (All plus the existing department enum values). Implement client-side filtering logic that applies all three filters simultaneously and resets pagination to page 1 when any filter changes. Use shadcn Input and Select components."
+        }
+      ]
+    },
+    {
+      "id": "REQ-18",
+      "summary": "Add summary analytics strip at the top of the Users List page showing Total Users, Total Active Users, Total Managers, and Total Employees",
+      "acceptanceCriteria": [
+        "Four stat cards are displayed above the Users List table.",
+        "Total Users shows the count of all user records.",
+        "Total Active Users shows the count of users with accountStatus = Active.",
+        "Total Managers shows the count of users with role = Manager.",
+        "Total Employees shows the count of users with role = Employee.",
+        "Cards use the existing white + green corporate card style consistent with the rest of the Admin Dashboard."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/UsersSummaryCards.tsx",
+          "operation": "create",
+          "description": "Create a component that accepts an array of UserStats and calculates four counts: Total Users (length), Total Active Users (filter by accountStatus = active), Total Managers (filter by role = manager), Total Employees (filter by role = employee). Render the counts in a 4-card grid using the same card styling pattern as SummaryStatsCards with color-coded icons and the Yesfour Infra corporate theme."
+        },
+        {
+          "path": "frontend/src/pages/UsersListPage.tsx",
+          "operation": "modify",
+          "description": "Render the UsersSummaryCards component at the top of the page, passing the fetched user stats array. Position it above the filter controls and ensure responsive layout on desktop and tablet."
+        }
+      ]
+    },
+    {
+      "id": "REQ-19",
+      "summary": "Ensure the Users List page styling matches the existing Yesfour Infra corporate theme and is fully responsive",
+      "acceptanceCriteria": [
+        "The Users List page visually matches the existing admin dashboard styling (colors, typography, spacing, card borders).",
+        "The table layout is clean and readable on both desktop and tablet widths.",
+        "No chat, messaging, or discussion UI elements are present anywhere on the Users List page.",
+        "Active/Inactive status badges use contrasting colors consistent with the app's existing badge system."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/UsersListPage.tsx",
+          "operation": "modify",
+          "description": "Apply the existing Yesfour Infra corporate theme throughout the page: white backgrounds, green (#2E7D32) primary accent, subtle grey borders, clean sans-serif typography (Inter font), and card-based layouts. Ensure the table uses shadcn Table components with responsive design for desktop and tablet. Verify no chat or messaging UI elements are included."
+        },
+        {
+          "path": "frontend/src/components/UserAccountStatusBadge.tsx",
+          "operation": "modify",
+          "description": "Ensure the Active badge uses a green accent color consistent with the existing badge system, and the Inactive badge uses a contrasting grey color. Follow the same styling pattern as StatusBadge for consistency."
+        }
+      ]
+    }
+  ]
+}

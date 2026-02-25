@@ -1,0 +1,132 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-add-a-users-menu-item-to-the-admin-dashboard-sidebar-navigation-that-is-visible-only-when-the-authenticated-user-has-the-admin-role-the-item-must-be-completely-hidden-for-manager-and-employee-roles-clicking-it-navigates-to-the-users-list-page-within-the-admin-dashboard",
+      "featureTitle": "Add a 'Users' menu item to the Admin Dashboard sidebar navigation that is visible only when the authenticated user has the Admin role. The item must be completely hidden for Manager and Employee roles. Clicking it navigates to the Users List page within the Admin Dashboard.",
+      "files": [
+        "frontend/src/pages/AdminDashboard.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-14"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-create-a-users-list-page-inside-the-admin-dashboard-that-displays-all-registered-users-in-a-paginated-table-the-table-must-include-the-following-columns-serial-number-full-name-email-role-department-total-tasks-assigned-tasks-completed-performance-points-and-account-status-active-inactive-pagination-shows-10-users-per-page",
+      "featureTitle": "Create a Users List page inside the Admin Dashboard that displays all registered users in a paginated table. The table must include the following columns: Serial Number, Full Name, Email, Role, Department, Total Tasks Assigned, Tasks Completed, Performance Points, and Account Status (Active / Inactive). Pagination shows 10 users per page.",
+      "files": [
+        "frontend/src/components/UserAccountStatusBadge.tsx",
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/pages/UsersListPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-15"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-admin-action-controls-to-each-row-in-the-users-list-table-an-edit-role-button-that-opens-an-inline-selector-or-modal-to-change-the-user-s-role-an-activate-deactivate-toggle-button-that-switches-the-user-s-account-status-and-a-delete-button-that-shows-a-confirmation-popup-before-permanently-removing-the-user",
+      "featureTitle": "Add admin action controls to each row in the Users List table: an Edit Role button that opens an inline selector or modal to change the user's role; an Activate/Deactivate toggle button that switches the user's account status; and a Delete button that shows a confirmation popup before permanently removing the user.",
+      "files": [
+        "frontend/src/components/DeleteUserConfirmDialog.tsx",
+        "frontend/src/components/EditUserRoleModal.tsx",
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/pages/UsersListPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-16"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-search-and-filter-controls-above-the-users-list-table-a-text-search-input-that-filters-users-by-full-name-or-email-a-role-filter-dropdown-all-admin-manager-employee-and-a-department-filter-dropdown-populated-with-the-existing-department-values-used-in-the-app-all-filters-apply-client-side-or-trigger-a-re-fetch-and-reset-pagination-to-page-1-when-changed",
+      "featureTitle": "Add search and filter controls above the Users List table: a text search input that filters users by Full Name or Email; a Role filter dropdown (All / Admin / Manager / Employee); and a Department filter dropdown populated with the existing department values used in the app. All filters apply client-side or trigger a re-fetch and reset pagination to page 1 when changed.",
+      "files": [
+        "frontend/src/pages/UsersListPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-17"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-a-summary-analytics-strip-at-the-top-of-the-users-list-page-showing-four-stat-cards-total-users-total-active-users-total-managers-and-total-employees-these-values-are-derived-from-the-same-user-list-data-already-fetched-for-the-table",
+      "featureTitle": "Add a summary analytics strip at the top of the Users List page showing four stat cards: Total Users, Total Active Users, Total Managers, and Total Employees. These values are derived from the same user list data already fetched for the table.",
+      "files": [
+        "frontend/src/components/UsersSummaryCards.tsx",
+        "frontend/src/pages/UsersListPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-18"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-ensure-the-users-list-page-and-all-its-controls-are-styled-with-the-existing-yesfour-infra-corporate-theme-white-backgrounds-green-2e7d32-primary-accent-subtle-grey-borders-clean-sans-serif-typography-and-card-based-layouts-the-page-must-be-responsive-and-must-not-introduce-any-chat-or-messaging-ui-elements",
+      "featureTitle": "Ensure the Users List page and all its controls are styled with the existing Yesfour Infra corporate theme: white backgrounds, green (#2E7D32) primary accent, subtle grey borders, clean sans-serif typography, and card-based layouts. The page must be responsive and must not introduce any chat or messaging UI elements.",
+      "files": [
+        "frontend/src/components/UserAccountStatusBadge.tsx",
+        "frontend/src/pages/UsersListPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-19"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

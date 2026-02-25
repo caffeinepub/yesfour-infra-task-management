@@ -1,0 +1,201 @@
+{
+  "kind": "build_request",
+  "title": "Add Admin-Only Users List Section to Admin Dashboard",
+  "projectName": "Yesfour Infra Task Manager",
+  "priority": "normal",
+  "requirements": [
+    {
+      "id": "REQ-12",
+      "text": "Add a backend query in the Motoko actor that returns a list of all registered users with aggregated statistics: total tasks assigned, total tasks completed (Green status), and sum of performance points. This endpoint must be accessible only by principals with the Admin role; any other caller must receive an authorization error. The response must never include password or credential data.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-20"
+        ],
+        "quotes": [
+          "Create secure endpoint: GET /admin/users",
+          "Role-based access control (Admin only)",
+          "Aggregate user statistics: Count total assigned tasks, Count completed tasks, Sum performance points",
+          "If non-admin tries to access /admin/users manually → return 403 Unauthorized",
+          "passwords must never be returned"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Calling the admin users query as an Admin principal returns a list of all user profiles with name, email, role, department, totalTasksAssigned, tasksCompleted, performancePoints, and accountStatus fields.",
+        "Calling the query as a Manager or Employee principal returns an authorization error.",
+        "No password or credential fields are present in any returned user record.",
+        "tasksCompleted count reflects only tasks with Green (Completed) status.",
+        "totalTasksAssigned is the count of all tasks where assignedTo matches the user.",
+        "performancePoints is the current accumulated points for the user."
+      ]
+    },
+    {
+      "id": "REQ-13",
+      "text": "Add backend mutations in the Motoko actor for admin user management: (1) update a user's role (Admin / Manager / Employee), (2) toggle a user's account status (Active / Inactive), and (3) delete a user record. All three mutations must be restricted to Admin principals only.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-20"
+        ],
+        "quotes": [
+          "Edit Role",
+          "Activate / Deactivate User",
+          "Delete User (with confirmation popup)",
+          "Role-based access control (Admin only)"
+        ]
+      },
+      "acceptanceCriteria": [
+        "An Admin can change any user's role to Admin, Manager, or Employee.",
+        "An Admin can set a user's accountStatus to Active or Inactive.",
+        "An Admin can delete a user record; the record no longer appears in subsequent user list queries.",
+        "All three mutations return an authorization error when called by a non-Admin principal."
+      ]
+    },
+    {
+      "id": "REQ-14",
+      "text": "Add a 'Users' menu item to the Admin Dashboard sidebar navigation that is visible only when the authenticated user has the Admin role. The item must be completely hidden for Manager and Employee roles. Clicking it navigates to the Users List page within the Admin Dashboard.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-20"
+        ],
+        "quotes": [
+          "Add a new sidebar menu item: Name: 'Users', Visible ONLY when logged in as Admin, Completely hidden for Manager and Employee roles"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The 'Users' sidebar item appears in the Admin Dashboard navigation when logged in as Admin.",
+        "The 'Users' sidebar item is not rendered at all for Manager or Employee sessions.",
+        "Clicking 'Users' renders the Users List page within the Admin Dashboard without breaking any other dashboard tabs or navigation."
+      ]
+    },
+    {
+      "id": "REQ-15",
+      "text": "Create a Users List page inside the Admin Dashboard that displays all registered users in a paginated table. The table must include the following columns: Serial Number, Full Name, Email, Role, Department, Total Tasks Assigned, Tasks Completed, Performance Points, and Account Status (Active / Inactive). Pagination shows 10 users per page.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-20"
+        ],
+        "quotes": [
+          "Create Users List Page with Table View",
+          "Columns: Serial Number, Full Name, Email, Role (Admin / Manager / Employee), Department, Total Tasks Assigned, Tasks Completed, Performance Points, Account Status (Active / Inactive)",
+          "Pagination (10 users per page)"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The table renders all columns: Serial Number, Full Name, Email, Role, Department, Total Tasks Assigned, Tasks Completed, Performance Points, Account Status.",
+        "Account Status displays as a styled badge showing 'Active' or 'Inactive'.",
+        "The table paginates at 10 rows per page with previous/next controls.",
+        "Serial numbers are sequential across all pages (i.e., page 2 starts at 11).",
+        "Data is fetched from the admin users backend query and renders correctly."
+      ]
+    },
+    {
+      "id": "REQ-16",
+      "text": "Add admin action controls to each row in the Users List table: an Edit Role button that opens an inline selector or modal to change the user's role; an Activate/Deactivate toggle button that switches the user's account status; and a Delete button that shows a confirmation popup before permanently removing the user.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-20"
+        ],
+        "quotes": [
+          "Edit Role",
+          "Activate / Deactivate User",
+          "Delete User (with confirmation popup)"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Each table row has Edit Role, Activate/Deactivate, and Delete action controls.",
+        "Edit Role opens a modal or inline dropdown allowing selection of Admin, Manager, or Employee; saving calls the update role mutation and refreshes the table.",
+        "Activate/Deactivate button toggles the user's accountStatus and updates the badge in the table without a full page reload.",
+        "Delete button opens a confirmation dialog; confirming calls the delete mutation and removes the row from the table.",
+        "Cancelling the delete confirmation dialog leaves the user record unchanged."
+      ]
+    },
+    {
+      "id": "REQ-17",
+      "text": "Add search and filter controls above the Users List table: a text search input that filters users by Full Name or Email; a Role filter dropdown (All / Admin / Manager / Employee); and a Department filter dropdown populated with the existing department values used in the app. All filters apply client-side or trigger a re-fetch and reset pagination to page 1 when changed.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-20"
+        ],
+        "quotes": [
+          "Search by Name or Email",
+          "Filter by Role",
+          "Filter by Department",
+          "Pagination (10 users per page)"
+        ]
+      },
+      "acceptanceCriteria": [
+        "A search input filters the table to rows where Full Name or Email contains the entered text (case-insensitive).",
+        "The Role dropdown filters the table to only the selected role; 'All' shows every role.",
+        "The Department dropdown filters the table to only users in the selected department; 'All' shows every department.",
+        "Changing any filter resets the current page back to page 1.",
+        "Filters can be combined (e.g., search + role + department applied simultaneously)."
+      ]
+    },
+    {
+      "id": "REQ-18",
+      "text": "Add a summary analytics strip at the top of the Users List page showing four stat cards: Total Users, Total Active Users, Total Managers, and Total Employees. These values are derived from the same user list data already fetched for the table.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-20"
+        ],
+        "quotes": [
+          "add a small analytics card at the top showing: Total Users, Total Active Users, Total Managers, Total Employees"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Four stat cards are displayed above the Users List table.",
+        "Total Users shows the count of all user records.",
+        "Total Active Users shows the count of users with accountStatus = Active.",
+        "Total Managers shows the count of users with role = Manager.",
+        "Total Employees shows the count of users with role = Employee.",
+        "Cards use the existing white + green corporate card style consistent with the rest of the Admin Dashboard."
+      ]
+    },
+    {
+      "id": "REQ-19",
+      "text": "Ensure the Users List page and all its controls are styled with the existing Yesfour Infra corporate theme: white backgrounds, green (#2E7D32) primary accent, subtle grey borders, clean sans-serif typography, and card-based layouts. The page must be responsive and must not introduce any chat or messaging UI elements.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-20"
+        ],
+        "quotes": [
+          "Maintain existing white + green corporate theme",
+          "Clean professional table layout",
+          "Responsive design",
+          "No chat or messaging feature"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The Users List page visually matches the existing admin dashboard styling (colors, typography, spacing, card borders).",
+        "The table layout is clean and readable on both desktop and tablet widths.",
+        "No chat, messaging, or discussion UI elements are present anywhere on the Users List page.",
+        "Active/Inactive status badges use contrasting colors consistent with the app's existing badge system."
+      ]
+    }
+  ],
+  "constraints": [
+    "Do not modify any existing task workflow, approval system, or task-related backend logic.",
+    "Do not alter the existing Employee Dashboard, Manager Dashboard, or existing Admin Dashboard tabs.",
+    "Do not expose password or credential fields in any user-facing API response.",
+    "The Users sidebar menu item must not be rendered for Manager or Employee roles under any circumstances.",
+    "All new backend mutations and queries must enforce Admin-only access control."
+  ],
+  "nonGoals": [
+    "Modifying the task creation, proof upload, or approval/rejection workflow.",
+    "Adding chat, messaging, email, or real-time communication features.",
+    "Changing the existing database schema for tasks or altering task status logic.",
+    "Adding user self-registration or profile editing for non-admin users.",
+    "Modifying the existing Manager or Employee dashboards in any way."
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  }
+}

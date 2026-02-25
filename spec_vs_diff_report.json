@@ -1,0 +1,66 @@
+{
+  "kind": "spec_vs_diff_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-25T10:41:07.352Z",
+  "summary": "The diff implements most of the requested requirements (REQ-12 through REQ-19) for an admin-only Users List section. Backend mutations and queries are present in main.mo, frontend components and pages are added, and the Admin Dashboard is updated with a Users tab. However, there are notable gaps: the backend getAllUsersStats query does not include a Principal or email field in UserStats, breaking per-user mutations on the frontend. The search filter incorrectly checks department instead of email. The Users tab is unconditionally rendered in AdminDashboard without explicit role-based hiding.",
+  "missing_requirements": [
+    {
+      "id": "REQ-12",
+      "requirement": "The admin users query response must include an email field for each user profile.",
+      "reason": "The UserProfile type in backend/main.mo and the UserStats struct do not include an email field. The frontend UsersListPage has an Email column but the backend never returns email data.",
+      "evidence": [
+        "backend/main.mo",
+        "frontend/src/pages/UsersListPage.tsx"
+      ]
+    },
+    {
+      "id": "REQ-12",
+      "requirement": "getAllUsersStats must return each user's Principal so the frontend can call role/status/delete mutations per user.",
+      "reason": "The backend returns UserStats[] without the user's Principal. The frontend falls back to synthetic 'user-{idx}' string keys, making it impossible to pass a real Principal to deleteUser, updateUserRole, or toggleUserAccountStatus.",
+      "evidence": [
+        "backend/main.mo",
+        "frontend/src/pages/UsersListPage.tsx"
+      ]
+    },
+    {
+      "id": "REQ-14",
+      "requirement": "The 'Users' sidebar menu item must be completely hidden (not rendered at all) for Manager and Employee roles.",
+      "reason": "The Users tab is unconditionally rendered inside AdminDashboard's TabsList without any role-based conditional guard. Non-admins are redirected away by routing logic but the tab itself is not conditionally hidden.",
+      "evidence": [
+        "frontend/src/pages/AdminDashboard.tsx"
+      ]
+    },
+    {
+      "id": "REQ-17",
+      "requirement": "The text search input must filter by Full Name OR Email (case-insensitive).",
+      "reason": "In UsersListPage.tsx, the search filter checks profile.name and profile.department instead of profile.name and profile.email, and email does not exist in the profile type.",
+      "evidence": [
+        "frontend/src/pages/UsersListPage.tsx"
+      ]
+    }
+  ],
+  "hallucinated_features": [
+    {
+      "description": "A migration module (migration.mo) was added to handle schema migration for the accountStatus field.",
+      "reason": "The build request did not request any migration utility or schema migration module. It only requested new backend queries and mutations.",
+      "evidence": [
+        "backend/migration.mo"
+      ]
+    }
+  ],
+  "confidence": 0.72,
+  "changed_files": [
+    "backend/main.mo",
+    "backend/migration.mo",
+    "frontend-file-summaries.txt",
+    "frontend/src/components/DeleteUserConfirmDialog.tsx",
+    "frontend/src/components/EditUserRoleModal.tsx",
+    "frontend/src/components/UserAccountStatusBadge.tsx",
+    "frontend/src/components/UsersSummaryCards.tsx",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/pages/AdminDashboard.tsx",
+    "frontend/src/pages/ProfileSetupPage.tsx",
+    "frontend/src/pages/UsersListPage.tsx",
+    "project_state.json"
+  ]
+}
